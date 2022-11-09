@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 # Change your executable name to something creative!
-set(NAME pico-boilerplate) # <-- Name your project/executable here!
+set(NAME ledcontrol) # <-- Name your project/executable here!
 
 include(pimoroni_pico_import.cmake)
 include(pico_sdk_import.cmake)
@@ -16,23 +16,29 @@ pico_sdk_init()
 
 # Add your source files
 add_executable(${NAME}
-    main.cpp # <-- Add source files here!
+    main.cpp
 )
 
 # Include required libraries
 # This assumes `pimoroni-pico` is stored alongside your project
-include(common/pimoroni_i2c)
-include(libraries/pico_explorer/pico_explorer)
-# include(libraries/pico_display/pico_display)
+include(../pimoroni-pico/common/pimoroni_i2c)
+include(../pimoroni-pico/drivers/ioexpander/ioexpander)
+include(../pimoroni-pico/drivers/plasma/plasma)
+include(../pimoroni-pico/libraries/breakout_encoder/breakout_encoder)
+include(../pimoroni-pico/drivers/button/button)
 
 # Don't forget to link the libraries you need!
 target_link_libraries(${NAME}
-    pimoroni_i2c
-    pico_explorer # <-- List libraries here!
+        pico_stdlib
+        pimoroni_i2c
+        breakout_encoder
+        button
+        plasma
 )
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(${NAME})
+pico_enable_stdio_usb(${NAME} ENABLED)
 
 # Set up files for the release packages
 install(FILES

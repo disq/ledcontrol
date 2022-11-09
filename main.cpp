@@ -33,16 +33,17 @@ using namespace plasma;
 
 // Defaults... between 0 and 1.0f
 // The speed that the LEDs will start cycling at
-const float_t DEFAULT_SPEED = 0.2f;
+const float_t DEFAULT_SPEED = 0.04f;
 
 // The hue that the LEDs will start at. 1.0f = 360 degrees
-const float_t DEFAULT_HUE = 0.0f;
+const float_t DEFAULT_HUE = 0.8f;
 
 // The angle (in degrees) from the hue, that the LEDs will end at (1.0f = 360 degrees)
-const float_t DEFAULT_ANGLE = 0.3f;
+const float_t DEFAULT_ANGLE = 0.7f;
 
 // The brightness to set the LEDs to. 1.0f = 100%
-const float_t DEFAULT_BRIGHTNESS = 0.1f;
+const float_t DEFAULT_BRIGHTNESS = 0.25f;
+const float_t MIN_BRIGHTNESS = 0.15f; // below this there's no meaningful output
 
 // How many times the LEDs will be updated per second
 const uint UPDATES = 60;
@@ -82,14 +83,17 @@ float wrap(float v, float min, float max) {
 
 
 void colour_cycle(float hue, float t, float angle) {
+  auto hue_deg = hue * 360.0f;
+  auto angle_deg = angle * 360.0f;
+
   t /= 200.0f;
 
   for(auto i = 0u; i < led_strip.num_leds; ++i) {
     float percent_along = (float)i / led_strip.num_leds;
-    float offset = sinf((percent_along + 0.5f + t) * M_PI) * angle;
-    float h = wrap((hue + offset) / 360.0f, 0.0f, 1.0f);
+    float offset = sinf((percent_along + 0.5f + t) * M_PI) * angle_deg;
+    float h = wrap((hue_deg + offset) / 360.0f, 0.0f, 1.0f);
     if (brightness_as_value) {
-      led_strip.set_hsv(i, h, brightness, 1.0f);
+      led_strip.set_hsv(i, h, 1.0f, brightness);
     } else {
       led_strip.set_hsv(i, h, 1.0f, 1.0f);
     }
@@ -101,10 +105,9 @@ void speed_gauge(float_t v) {
 
   for(auto i = 0u; i < led_strip.num_leds; ++i) {
     if(i < light_pixels) {
-      led_strip.set_rgb(i, 0, 255, 0);
-    }
-    else {
-      led_strip.set_rgb(i, 255, 0, 0);
+      led_strip.set_rgb(i, 64, 64, 64);
+    } else {
+      led_strip.set_rgb(i, 0, 0, 0);
     }
   }
 }
@@ -135,9 +138,6 @@ int main() {
   float_t hue = DEFAULT_HUE;
   float_t angle = DEFAULT_ANGLE;
 
-  float_t hue_deg = hue * 359.0f;
-  float_t angle_deg = angle * 359.0f;
-
   bool cycle = true;
   ENCODER_MODE mode = ENCODER_MODE::COLOUR;
   enc.set_led(0, 0, 255);
@@ -147,8 +147,8 @@ int main() {
     uint32_t t = millis() - start_time;
     if(encoder_detected) {
       if(enc.get_interrupt_flag()) {
-        int16_t count_raw = enc.read();
-        float_t count = std::min(10.0f, std::max(-10.0f, (float_t)count_raw))/10.0f;
+        int16_t count_raw = enc.read(); // Looks like -64 to +64, but we assume -10 to +10
+        float_t count = std::min(10.0f, std::max(-10.0f, (float_t)count_raw))/50.0f; // Max increase can be 20% per update
         printf("[encoder] count: %d (%f)\n", count_raw, count);
         enc.clear_interrupt_flag();
         enc.clear();
@@ -159,31 +159,30 @@ int main() {
           case ENCODER_MODE::COLOUR:
             hue += count;
             hue = std::min(1.0f, std::max(0.0f, hue));
-            hue_deg = hue * 359.0f;
-            colour_cycle(hue_deg, 0, angle_deg);
-            printf("new hue start angle: %f (%f degrees)\n", hue, hue_deg);
+            colour_cycle(hue, 0, angle);
+            printf("new hue start angle: %f\n", hue);
             break;
 
           case ENCODER_MODE::ANGLE:
             angle += count;
             angle = std::min(1.0f, std::max(0.0f, angle));
-            angle_deg = angle * 359.0f;
-            printf("new hue end angle: %f (%f degrees)\n", angle, angle_deg);
-            colour_cycle(hue_deg, 0, angle_deg);
+            printf("new hue end angle: %f\n", angle);
+            colour_cycle(hue, 0, angle);
             break;
 
           case ENCODER_MODE::BRIGHTNESS:
             brightness += count;
-            brightness = std::min(1.0f, std::max(0.0f, brightness));
-            led_strip.set_brightness((uint8_t)(brightness*31.0f));
+            brightness = std::min(1.0f, std::max(MIN_BRIGHTNESS, brightness));
+//            led_strip.set_brightness((uint8_t)(brightness*31.0f));
             printf("new brightness: %f\n", brightness);
-            brightness_gauge(brightness);
+            colour_cycle(hue, 0, angle);
+//            brightness_gauge(brightness);
             enc.set_brightness(brightness);
             break;
 
           case ENCODER_MODE::SPEED:
             speed += count;
-            speed = std::min(1.0f, std::max(0.0f, speed));
+            speed = std::min(1.0f, std::max(0.01f, speed));
             printf("new speed: %f\n", speed);
             speed_gauge(speed);
             break;
@@ -195,13 +194,12 @@ int main() {
     bool c_pressed = button_c.read();
 
     if(c_pressed) {
+      printf("C pressed! defaults\n");
       speed = DEFAULT_SPEED;
       hue = DEFAULT_HUE;
       angle = DEFAULT_ANGLE;
       brightness = DEFAULT_BRIGHTNESS;
-
-      hue_deg = hue * 359.0f;
-      angle_deg = angle * 359.0f;
+      cycle = true;
     }
 
     if(b_pressed) {
@@ -241,7 +239,8 @@ int main() {
     }
 
     if(cycle) {
-      colour_cycle(hue, (float)t * speed, (float)angle);
+//      printf("[cycle] hue: %f, angle: %f, speed: %f, brightness: %f\n", hue, angle, speed, brightness);
+      colour_cycle(hue, (float)t * speed, angle);
     }
 
 //    auto mid_led = led_strip.get(led_strip.num_leds / 2);

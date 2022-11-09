@@ -65,6 +65,7 @@ I2C i2c(BOARD::BREAKOUT_GARDEN);
 BreakoutEncoder enc(&i2c);
 
 enum ENCODER_MODE {
+    OFF,
     COLOUR,
     ANGLE,
     BRIGHTNESS,
@@ -125,6 +126,31 @@ void brightness_gauge(float_t v) {
   }
 }
 
+ENCODER_MODE encoder_state_by_mode(ENCODER_MODE mode) {
+  switch(mode) {
+    case ENCODER_MODE::OFF:
+      enc.set_led(0, 0, 0);
+      break;
+    case ENCODER_MODE::COLOUR:
+      enc.set_brightness(ENC_DEFAULT_BRIGHTNESS);
+      enc.set_led(255, 255, 0); // yellow
+      break;
+    case ENCODER_MODE::ANGLE:
+      enc.set_brightness(ENC_DEFAULT_BRIGHTNESS);
+      enc.set_led(255, 128, 0); // orange
+      break;
+    case ENCODER_MODE::BRIGHTNESS:
+      enc.set_brightness(brightness);
+      enc.set_led(255, 255, 255); // white
+      break;
+    case ENCODER_MODE::SPEED:
+      enc.set_brightness(ENC_DEFAULT_BRIGHTNESS);
+      enc.set_led(255, 0, 0); // red
+      break;
+  }
+  return mode;
+}
+
 int main() {
   stdio_init_all();
 
@@ -139,8 +165,7 @@ int main() {
   float_t angle = DEFAULT_ANGLE;
 
   bool cycle = true;
-  ENCODER_MODE mode = ENCODER_MODE::COLOUR;
-  enc.set_led(0, 0, 255);
+  ENCODER_MODE mode = ENCODER_MODE::OFF;
 
   uint32_t start_time = millis();
   while(true) {
@@ -153,9 +178,12 @@ int main() {
         enc.clear_interrupt_flag();
         enc.clear();
 
-        cycle = false;
-        float hue_angle;
+        if (mode != ENCODER_MODE::OFF) cycle = false;
+
         switch(mode) {
+          case ENCODER_MODE::OFF:
+            break;
+
           case ENCODER_MODE::COLOUR:
             hue += count;
             hue = std::min(1.0f, std::max(0.0f, hue));
@@ -184,7 +212,8 @@ int main() {
             speed += count;
             speed = std::min(1.0f, std::max(0.01f, speed));
             printf("new speed: %f\n", speed);
-            speed_gauge(speed);
+//            speed_gauge(speed);
+            cycle = true;
             break;
         }
       }
@@ -199,6 +228,7 @@ int main() {
       hue = DEFAULT_HUE;
       angle = DEFAULT_ANGLE;
       brightness = DEFAULT_BRIGHTNESS;
+      mode = encoder_state_by_mode(ENCODER_MODE::OFF);
       cycle = true;
     }
 
@@ -209,31 +239,30 @@ int main() {
     }
 
     if (a_pressed) {
-      enc.set_brightness(ENC_DEFAULT_BRIGHTNESS);
-
       switch(mode) {
+        case ENCODER_MODE::OFF:
+          mode = encoder_state_by_mode(ENCODER_MODE::COLOUR);
+          printf("[mode] start colour\n");
+          break;
+
         case ENCODER_MODE::COLOUR:
-          enc.set_led(255, 0, 0);
-          mode = ENCODER_MODE::ANGLE;
-          printf("[mode] colour end\n");
+          mode = encoder_state_by_mode(ENCODER_MODE::ANGLE);
+          printf("[mode] end colour\n");
           break;
 
         case ENCODER_MODE::ANGLE:
-          enc.set_led(255, 255, 0);
-          mode = ENCODER_MODE::BRIGHTNESS;
+          mode = encoder_state_by_mode(ENCODER_MODE::BRIGHTNESS);
           printf("[mode] brightness\n");
           break;
 
         case ENCODER_MODE::BRIGHTNESS:
-          enc.set_led(0, 255, 0);
-          mode = ENCODER_MODE::SPEED;
+          mode = encoder_state_by_mode(ENCODER_MODE::SPEED);
           printf("[mode] speed\n");
           break;
 
         case ENCODER_MODE::SPEED:
-          enc.set_led(0, 0, 255);
-          mode = ENCODER_MODE::COLOUR;
-          printf("[mode] colour start\n");
+          mode = encoder_state_by_mode(ENCODER_MODE::OFF);
+          printf("[mode] off\n");
           break;
       }
     }

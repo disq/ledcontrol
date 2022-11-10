@@ -41,7 +41,7 @@ const float_t DEFAULT_HUE = 0.8f;
 const float_t DEFAULT_ANGLE = 0.7f;
 
 // The brightness to set the LEDs to. 1.0f = 100%
-const float_t DEFAULT_BRIGHTNESS = 0.25f;
+const float_t DEFAULT_BRIGHTNESS = 0.1f;
 const float_t MIN_BRIGHTNESS = 0.02f; // below this there's no meaningful output
 
 // How many times the LEDs will be updated per second

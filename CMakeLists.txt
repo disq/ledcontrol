@@ -38,6 +38,7 @@ target_link_libraries(${NAME}
         button
         hardware_pio
         PicoLed
+        pico_bootsel_via_double_reset
 )
 
 # create map/bin/hex file etc.

@@ -11,6 +11,9 @@ project(${NAME} C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
+set(PICO_CXX_ENABLE_EXCEPTIONS 1)
+set(PICO_CXX_ENABLE_RTTI 1)
+
 # Initialize the SDK
 pico_sdk_init()
 
@@ -23,9 +26,9 @@ add_executable(${NAME}
 # This assumes `pimoroni-pico` is stored alongside your project
 include(../pimoroni-pico/common/pimoroni_i2c)
 include(../pimoroni-pico/drivers/ioexpander/ioexpander)
-include(../pimoroni-pico/drivers/plasma/plasma)
 include(../pimoroni-pico/libraries/breakout_encoder/breakout_encoder)
 include(../pimoroni-pico/drivers/button/button)
+include(../PicoLED/PicoLed.cmake)
 
 # Don't forget to link the libraries you need!
 target_link_libraries(${NAME}
@@ -33,7 +36,8 @@ target_link_libraries(${NAME}
         pimoroni_i2c
         breakout_encoder
         button
-        plasma
+        hardware_pio
+        PicoLed
 )
 
 # create map/bin/hex file etc.

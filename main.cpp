@@ -7,7 +7,7 @@
 
 #include "breakout_encoder.hpp"
 #include "button.hpp"
-#include "ws2812.hpp"
+#include "PicoLed.hpp"
 
 /*
  * Connections
@@ -29,7 +29,6 @@ const uint BUTTON_C_PIN = 13;
 const uint NUM_LEDS = 3;
 
 using namespace pimoroni;
-using namespace plasma;
 
 // Defaults... between 0 and 1.0f
 // The speed that the LEDs will start cycling at
@@ -43,7 +42,7 @@ const float_t DEFAULT_ANGLE = 0.7f;
 
 // The brightness to set the LEDs to. 1.0f = 100%
 const float_t DEFAULT_BRIGHTNESS = 0.25f;
-const float_t MIN_BRIGHTNESS = 0.15f; // below this there's no meaningful output
+const float_t MIN_BRIGHTNESS = 0.02f; // below this there's no meaningful output
 
 // How many times the LEDs will be updated per second
 const uint UPDATES = 60;
@@ -51,11 +50,9 @@ const uint UPDATES = 60;
 const float_t ENC_DEFAULT_BRIGHTNESS = 1.0f;
 
 float_t brightness = DEFAULT_BRIGHTNESS;
-const bool brightness_as_value = true;
+const float_t BRIGHTNESS_SCALE = 255;
 
-// WS28X-style LEDs with a single signal line. AKA NeoPixel
-WS2812 led_strip(NUM_LEDS, pio0, 0, LED_DATA_PIN);
-
+auto led_strip = PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, PicoLed::FORMAT_GRB);
 
 Button button_a(BUTTON_A_PIN, Polarity::ACTIVE_LOW, 0);
 Button button_b(BUTTON_B_PIN, Polarity::ACTIVE_LOW, 0);
@@ -89,41 +86,13 @@ void colour_cycle(float hue, float t, float angle) {
 
   t /= 200.0f;
 
-  for(auto i = 0u; i < led_strip.num_leds; ++i) {
-    float percent_along = (float)i / led_strip.num_leds;
+  for(auto i = 0u; i < led_strip.getNumLeds(); ++i) {
+    float percent_along = (float)i / led_strip.getNumLeds();
     float offset = sinf((percent_along + 0.5f + t) * M_PI) * angle_deg;
     float h = wrap((hue_deg + offset) / 360.0f, 0.0f, 1.0f);
-    if (brightness_as_value) {
-      led_strip.set_hsv(i, h, 1.0f, brightness);
-    } else {
-      led_strip.set_hsv(i, h, 1.0f, 1.0f);
-    }
+    led_strip.setPixelColor(i, PicoLed::HSV(h*255.0f, 255.0f, 255.0f));
   }
-}
-
-void speed_gauge(float_t v) {
-  uint light_pixels = uint((float_t)led_strip.num_leds * v);
-
-  for(auto i = 0u; i < led_strip.num_leds; ++i) {
-    if(i < light_pixels) {
-      led_strip.set_rgb(i, 64, 64, 64);
-    } else {
-      led_strip.set_rgb(i, 0, 0, 0);
-    }
-  }
-}
-
-void brightness_gauge(float_t v) {
-  uint light_pixels = uint((float_t)led_strip.num_leds * v);
-
-  for(auto i = 0u; i < led_strip.num_leds; ++i) {
-    if(i < light_pixels) {
-      led_strip.set_rgb(i, 64, 64, 64);
-    }
-    else {
-      led_strip.set_rgb(i, 0, 0, 0);
-    }
-  }
+  led_strip.show();
 }
 
 ENCODER_MODE encoder_state_by_mode(ENCODER_MODE mode) {
@@ -154,7 +123,8 @@ ENCODER_MODE encoder_state_by_mode(ENCODER_MODE mode) {
 int main() {
   stdio_init_all();
 
-  led_strip.start(UPDATES);
+  led_strip.setBrightness((uint8_t)(DEFAULT_BRIGHTNESS*BRIGHTNESS_SCALE));
+  led_strip.show();
 
   bool encoder_detected = enc.init();
   enc.clear_interrupt_flag();
@@ -201,10 +171,9 @@ int main() {
           case ENCODER_MODE::BRIGHTNESS:
             brightness += count;
             brightness = std::min(1.0f, std::max(MIN_BRIGHTNESS, brightness));
-//            led_strip.set_brightness((uint8_t)(brightness*31.0f));
+            led_strip.setBrightness((uint8_t)(brightness*BRIGHTNESS_SCALE));
             printf("new brightness: %f\n", brightness);
             colour_cycle(hue, 0, angle);
-//            brightness_gauge(brightness);
             enc.set_brightness(brightness);
             break;
 
@@ -212,7 +181,6 @@ int main() {
             speed += count;
             speed = std::min(1.0f, std::max(0.01f, speed));
             printf("new speed: %f\n", speed);
-//            speed_gauge(speed);
             cycle = true;
             break;
         }
@@ -271,9 +239,6 @@ int main() {
 //      printf("[cycle] hue: %f, angle: %f, speed: %f, brightness: %f\n", hue, angle, speed, brightness);
       colour_cycle(hue, (float)t * speed, angle);
     }
-
-//    auto mid_led = led_strip.get(led_strip.num_leds / 2);
-//    enc.set_led(mid_led.r, mid_led.g, mid_led.b);
 
     // Sleep time controls the rate at which the LED buffer is updated
     // but *not* the actual framerate at which the buffer is sent to the LEDs

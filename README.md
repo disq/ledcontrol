@@ -26,7 +26,6 @@ Simple LED Control project for Raspberry Pi Pico.
 - Button "A" to GP11. Changes encoder mode.
 - Button "B" to GP12. Enables cycling.
 - Button "C" to GP13. Resets effects.
-- Buttons are active-low.
 
 ## Before you start
 

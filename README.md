@@ -112,6 +112,7 @@ cmake ..
 ## Build
 
 ```
+cd build
 make ledcontrol
 ```
 
@@ -121,5 +122,6 @@ Hold down the BOOTSEL button on the Pico and plug it into your computer. The Pic
 
 for macOS Ventura, try:
 ```
+cd build
 /bin/cp -X ledcontrol.uf2 /Volumes/RPI-RP2/
 ```

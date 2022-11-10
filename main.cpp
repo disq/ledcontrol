@@ -9,14 +9,8 @@
 #include "button.hpp"
 #include "PicoLed.hpp"
 
-// See connections section in README
-const uint LED_DATA_PIN = 28;
-const uint BUTTON_A_PIN = 11;
-const uint BUTTON_B_PIN = 12;
-const uint BUTTON_C_PIN = 13;
+// Adjust according to the number of LEDs you have
 const uint NUM_LEDS = 3;
-
-using namespace pimoroni;
 
 // Defaults... between 0 and 1.0f
 // The speed that the LEDs will start cycling at
@@ -26,7 +20,7 @@ const float_t DEFAULT_SPEED = 0.04f;
 const float_t DEFAULT_HUE = 0.8f;
 
 // The angle (in degrees) from the hue, that the LEDs will end at (1.0f = 360 degrees)
-const float_t DEFAULT_ANGLE = 0.7f;
+const float_t DEFAULT_ANGLE = 0.1f;
 
 // The brightness to set the LEDs to. 1.0f = 100%
 const float_t DEFAULT_BRIGHTNESS = 0.1f;
@@ -37,8 +31,18 @@ const uint UPDATES = 60;
 
 const float_t ENC_DEFAULT_BRIGHTNESS = 1.0f;
 
+// See connections section in README
+const uint LED_DATA_PIN = 28;
+const uint BUTTON_A_PIN = 11;
+const uint BUTTON_B_PIN = 12;
+const uint BUTTON_C_PIN = 13;
+
+// --- Code really starts from here ---
+
 float_t brightness = DEFAULT_BRIGHTNESS;
 const float_t BRIGHTNESS_SCALE = 255;
+
+using namespace pimoroni;
 
 auto led_strip = PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, PicoLed::FORMAT_GRB);
 
@@ -111,19 +115,19 @@ ENCODER_MODE encoder_state_by_mode(ENCODER_MODE mode) {
 int main() {
   stdio_init_all();
 
+  //Initialise the default values
+  float_t speed = DEFAULT_SPEED;
+  float_t hue = DEFAULT_HUE;
+  float_t angle = DEFAULT_ANGLE;
+  bool cycle = true;
+
   led_strip.setBrightness((uint8_t)(DEFAULT_BRIGHTNESS*BRIGHTNESS_SCALE));
   led_strip.show();
 
   bool encoder_detected = enc.init();
   enc.clear_interrupt_flag();
 
-  //Initialise the default values
-  float_t speed = DEFAULT_SPEED;
-  float_t hue = DEFAULT_HUE;
-  float_t angle = DEFAULT_ANGLE;
-
-  bool cycle = true;
-  ENCODER_MODE mode = ENCODER_MODE::OFF;
+  ENCODER_MODE mode = encoder_state_by_mode(ENCODER_MODE::OFF);
 
   uint32_t start_time = millis();
   while(true) {
@@ -144,7 +148,7 @@ int main() {
 
           case ENCODER_MODE::COLOUR:
             hue += count;
-            hue = std::min(1.0f, std::max(0.0f, hue));
+            hue = wrap(hue, 0.0f, 1.0f);
             colour_cycle(hue, 0, angle);
             printf("new hue start angle: %f\n", hue);
             break;

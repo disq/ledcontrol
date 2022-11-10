@@ -28,7 +28,7 @@ include(../pimoroni-pico/common/pimoroni_i2c)
 include(../pimoroni-pico/drivers/ioexpander/ioexpander)
 include(../pimoroni-pico/libraries/breakout_encoder/breakout_encoder)
 include(../pimoroni-pico/drivers/button/button)
-include(../PicoLED/PicoLed.cmake)
+include(PicoLED/PicoLed.cmake)
 
 # Don't forget to link the libraries you need!
 target_link_libraries(${NAME}

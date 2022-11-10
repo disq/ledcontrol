@@ -1,20 +1,38 @@
-# Pico C++ Boilerplate Project <!-- omit in toc -->
+# Pico LED Control
 
-This project is intended as a starting point for working with the Pico SDK and Pimoroni Libraries in C++.
+Simple LED Control project for Raspberry Pi Pico.
 
+- [Hardware](#hardware)
 - [Before you start](#before-you-start)
-- [Preparing your build environment](#preparing-your-build-environment)
+- [Prepare build environment](#prepare-build-environment)
 - [Grab the Pimoroni libraries](#grab-the-pimoroni-libraries)
-- [Clone this boilerplate](#clone-this-boilerplate)
-- [Prepare Visual Studio Code](#prepare-visual-studio-code)
-- [Prepare your project](#prepare-your-project)
-- [Pick your LICENSE](#pick-your-license)
+- [Clone this repository](#clone-this-repository)
+- [Prepare project environment](#prepare-project-environment)
+- [Build](#build)
+- [Flash](#flash)
+
+## Hardware
+
+- Raspberry Pi [Pico](https://shop.pimoroni.com/products/raspberry-pi-pico) or [Pico W](https://shop.pimoroni.com/products/raspberry-pi-pico-w)
+- Pimoroni [RGB Encoder Breakout](https://shop.pimoroni.com/products/rgb-encoder-breakout)
+- A [WS2812 LED strip](https://shop.pimoroni.com/collections/components?tags=LED%20Strip) or a bunch of [NeoPixels](https://www.adafruit.com/category/168)
+- Read [the uberguide](https://learn.adafruit.com/adafruit-neopixel-uberguide)
+- Three buttons, connecting various pins to GND when pressed (active low)
+
+### Connections
+
+- WS2812: Data on GP28. Power with 5V and GND.
+- RGB Encoder Breakout: Connect GP4,GP5 for I2C(SDA,SCL) and GP3 for interrupt. [Breakout Garden](https://shop.pimoroni.com/products/pico-breakout-garden-base) can be used.
+- Button "A" to GP11. Changes encoder mode.
+- Button "B" to GP12. Enables cycling.
+- Button "C" to GP13. Resets effects.
+- Buttons are active-low.
 
 ## Before you start
 
 It's easier if you make a `pico` directory or similar in which you keep the SDK, Pimoroni Libraries and your projects alongside each other. This makes it easier to include libraries.
 
-## Preparing your build environment
+## Prepare build environment
 
 Install build requirements:
 
@@ -35,7 +53,7 @@ cd ../
 
 The `PICO_SDK_PATH` set above will only last the duration of your session.
 
-You should should ensure your `PICO_SDK_PATH` environment variable is set by `~/.profile`:
+You should ensure your `PICO_SDK_PATH` environment variable is set by `~/.profile`:
 
 ```
 export PICO_SDK_PATH="/path/to/pico-sdk"
@@ -45,39 +63,40 @@ export PICO_SDK_PATH="/path/to/pico-sdk"
 
 ```
 git clone https://github.com/pimoroni/pimoroni-pico
+cd pimoroni-pico
+git submodule update --init
+cd ..
 ```
 
-## Clone this boilerplate
+## Clone this repository
 
 ```
-git clone https://github.com/pimoroni/pico-boilerplate
-cd pico-boilerplate
+git clone https://github.com/disq/ledcontrol
+cd ledcontrol
+git submodule update --init
 ```
 
-If you have not or don't want to set `PICO_SDK_PATH` you can edit `.vscode/settings.json` to pass the path directly to CMake.
+## Prepare project environment
 
-## Prepare Visual Studio Code
+In `ledcontrol` directory:
 
-Open VS Code and hit `Ctrl+Shift+P`.
+```
+mkdir build
+cd build
+cmake ..
+```
 
-Type `Install` and select `Extensions: Install Extensions`.
+## Build
 
-Make sure you install:
+```
+make ledcontrol
+```
 
-1. C/C++
-2. CMake
-3. CMake Tools
-4. Cortex-Debug (optional: for debugging via a Picoprobe or Pi GPIO)
-5. Markdown All in One (recommended: for preparing your own README.md)
+## Flash
 
-## Prepare your project
+Hold down the BOOTSEL button on the Pico and plug it into your computer. The Pico will appear as a USB drive called `RPI-RP2`. Copy the `ledcontrol.uf2` file to the root of the drive.
 
-Edit `CMakeLists.txt` and follow the instructions, you should make sure you:
-
-1. edit your project name
-2. include the libraries you need
-2. link the libraries to your project
-
-## Pick your LICENSE
-
-We've included a copy of BSD 3-Clause License to match that used in Raspberry Pi's Pico SDK and Pico Examples. You should review this and check it's appropriate for your project before publishing your code.
+for macOS Ventura, try:
+```
+/bin/cp -X ledcontrol.uf2 /Volumes/RPI-RP2/
+```

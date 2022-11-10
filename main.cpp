@@ -9,19 +9,7 @@
 #include "button.hpp"
 #include "PicoLed.hpp"
 
-/*
- * Connections
- *
- * WS2812: data to GP28.
- * Encoder: GP4,GP5 for I2C(SDA,SCL) and GP3 for interrupt.
- *
- * Button "A" to GP11. Changes encoder mode.
- * Button "B" to GP12. Enables cycling.
- * Button "C" to GP13. Resets effects.
- *
- * Buttons are active-low.
- */
-
+// See connections section in README
 const uint LED_DATA_PIN = 28;
 const uint BUTTON_A_PIN = 11;
 const uint BUTTON_B_PIN = 12;

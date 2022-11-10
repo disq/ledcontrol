@@ -41,6 +41,14 @@ target_link_libraries(${NAME}
         pico_bootsel_via_double_reset
 )
 
+if (PICO_CYW43_SUPPORTED)
+    if (TARGET pico_cyw43_arch)
+        target_link_libraries(${NAME}
+                pico_cyw43_arch_none # we need Wifi to access the GPIO, but we don't need anything else
+        )
+    endif()
+endif()
+
 # create map/bin/hex file etc.
 pico_add_extra_outputs(${NAME})
 pico_enable_stdio_usb(${NAME} ENABLED)

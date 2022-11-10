@@ -4,6 +4,9 @@
 #include <common/pimoroni_common.hpp>
 
 #include "pico/stdlib.h"
+#ifdef RASPBERRYPI_PICO_W
+#include "pico/cyw43_arch.h"
+#endif
 
 #include "breakout_encoder.hpp"
 #include "button.hpp"
@@ -37,10 +40,15 @@ const uint BUTTON_A_PIN = 11;
 const uint BUTTON_B_PIN = 12;
 const uint BUTTON_C_PIN = 13;
 
+#ifndef RASPBERRYPI_PICO_W
+#define LED_PAUSED_PIN PICO_DEFAULT_LED_PIN
+#endif
+
 // --- Code really starts from here ---
 
 float_t brightness = DEFAULT_BRIGHTNESS;
 const float_t BRIGHTNESS_SCALE = 255;
+bool cycle;
 
 using namespace pimoroni;
 
@@ -87,6 +95,16 @@ void colour_cycle(float hue, float t, float angle) {
   led_strip.show();
 }
 
+void set_cycle(bool v) {
+  cycle = v;
+#ifdef LED_PAUSED_PIN
+  gpio_put(LED_PAUSED_PIN, !cycle);
+#endif
+#ifdef RASPBERRYPI_PICO_W
+  cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, !cycle);
+#endif
+}
+
 ENCODER_MODE encoder_state_by_mode(ENCODER_MODE mode) {
   switch(mode) {
     case ENCODER_MODE::OFF:
@@ -115,11 +133,25 @@ ENCODER_MODE encoder_state_by_mode(ENCODER_MODE mode) {
 int main() {
   stdio_init_all();
 
+#ifdef LED_PAUSED_PIN
+  gpio_init(LED_PAUSED_PIN);
+  gpio_set_dir(LED_PAUSED_PIN, GPIO_OUT);
+  gpio_put(LED_PAUSED_PIN, false);
+#endif
+#ifdef RASPBERRYPI_PICO_W
+  if (cyw43_arch_init()) {
+      printf("WiFi init failed");
+      return -1;
+    }
+  cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+#endif
+
   //Initialise the default values
   float_t speed = DEFAULT_SPEED;
   float_t hue = DEFAULT_HUE;
   float_t angle = DEFAULT_ANGLE;
-  bool cycle = true;
+
+  set_cycle(true);
 
   led_strip.setBrightness((uint8_t)(DEFAULT_BRIGHTNESS*BRIGHTNESS_SCALE));
   led_strip.show();
@@ -140,8 +172,6 @@ int main() {
         enc.clear_interrupt_flag();
         enc.clear();
 
-        if (mode != ENCODER_MODE::OFF) cycle = false;
-
         switch(mode) {
           case ENCODER_MODE::OFF:
             break;
@@ -151,6 +181,7 @@ int main() {
             hue = wrap(hue, 0.0f, 1.0f);
             colour_cycle(hue, 0, angle);
             printf("new hue start angle: %f\n", hue);
+            set_cycle(false);
             break;
 
           case ENCODER_MODE::ANGLE:
@@ -158,6 +189,7 @@ int main() {
             angle = std::min(1.0f, std::max(0.0f, angle));
             printf("new hue end angle: %f\n", angle);
             colour_cycle(hue, 0, angle);
+            set_cycle(false);
             break;
 
           case ENCODER_MODE::BRIGHTNESS:
@@ -166,14 +198,14 @@ int main() {
             led_strip.setBrightness((uint8_t)(brightness*BRIGHTNESS_SCALE));
             printf("new brightness: %f\n", brightness);
             enc.set_brightness(brightness);
-            cycle = true;
+            set_cycle(true);
             break;
 
           case ENCODER_MODE::SPEED:
             speed += count;
             speed = std::min(1.0f, std::max(0.01f, speed));
             printf("new speed: %f\n", speed);
-            cycle = true;
+            set_cycle(true);
             break;
         }
       }
@@ -189,13 +221,13 @@ int main() {
       angle = DEFAULT_ANGLE;
       brightness = DEFAULT_BRIGHTNESS;
       mode = encoder_state_by_mode(ENCODER_MODE::OFF);
-      cycle = true;
+      set_cycle(true);
     }
 
     if(b_pressed) {
       if(!cycle)
         start_time = millis();
-      cycle = true;
+      set_cycle(true);
     }
 
     if (a_pressed) {

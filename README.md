@@ -35,8 +35,9 @@ Simple LED Control project for Raspberry Pi Pico.
 
 ### TL;DR
 - Button "A" changes encoder mode.
-- Button "B" enables cycling.
+- Button "B" re-enables cycling.
 - Button "C" resets effects. You could also reset the Pico to achieve the same effect.
+- Board LED is lit when cycling is stopped.
 
 ### Explanation
 
@@ -48,7 +49,8 @@ Encoder LED colours indicate the current mode. Use Button A to switch between th
 - White/grey: You're changing the brightness.
 - Red: You're now changing the cycling speed.
 
-In the yellow or orange modes, cycling of colours is stopped with the first encoder click. Press button B to reenable.
+In the yellow or orange modes, cycling of colours is stopped with the first encoder click and the board LED is lit. Press button B to re-enable.
+
 Cycling remains as-is when you're changing brightness or speed.
 
 Tip: Double-click the Captain Resetti to put it in bootloader mode.
@@ -110,6 +112,8 @@ mkdir build
 cd build
 cmake ..
 ```
+
+for Pico W, use `cmake -DPICO_BOARD=pico_w ..` instead.
 
 ## Build
 

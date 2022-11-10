@@ -49,6 +49,8 @@ const uint BUTTON_C_PIN = 13;
 float_t brightness = DEFAULT_BRIGHTNESS;
 const float_t BRIGHTNESS_SCALE = 255;
 bool cycle;
+uint32_t encoder_last_blink = 0;
+bool encoder_blink_state = false;
 
 using namespace pimoroni;
 
@@ -103,6 +105,41 @@ void set_cycle(bool v) {
 #ifdef RASPBERRYPI_PICO_W
   cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, !cycle);
 #endif
+}
+
+uint32_t encoder_colour_by_mode(ENCODER_MODE mode) {
+  switch(mode) {
+    case ENCODER_MODE::OFF:
+    default:
+      return 0;
+    case ENCODER_MODE::COLOUR:
+      return 0xFFFF00; // yellow
+    case ENCODER_MODE::ANGLE:
+      return 0xFF8000; // orange
+    case ENCODER_MODE::BRIGHTNESS:
+      return 0xFFFFFF; // white
+    case ENCODER_MODE::SPEED:
+      return 0xFF0000; // red
+  }
+}
+
+void encoder_loop(ENCODER_MODE mode) {
+  const uint32_t encoder_blink_interval = 500;
+  uint32_t ts = millis();
+  if (encoder_last_blink == 0 || (encoder_last_blink + encoder_blink_interval)<ts) {
+    encoder_last_blink = ts;
+    encoder_blink_state = !encoder_blink_state;
+    auto col = encoder_colour_by_mode(mode);
+    uint8_t col_r = (col >> 16) & 0xFF;
+    uint8_t col_g = (col >> 8) & 0xFF;
+    uint8_t col_b = col & 0xFF;
+    if (encoder_blink_state) {
+      col_r = col_r >> 1;
+      col_g = col_g >> 1;
+      col_b = col_b >> 1;
+    }
+    enc.set_led(col_r, col_g, col_b);
+  }
 }
 
 ENCODER_MODE encoder_state_by_mode(ENCODER_MODE mode) {
@@ -263,6 +300,7 @@ int main() {
 //      printf("[cycle] hue: %f, angle: %f, speed: %f, brightness: %f\n", hue, angle, speed, brightness);
       colour_cycle(hue, (float)t * speed, angle);
     }
+    if (!cycle && mode != ENCODER_MODE::OFF) encoder_loop(mode);
 
     // Sleep time controls the rate at which the LED buffer is updated
     // but *not* the actual framerate at which the buffer is sent to the LEDs

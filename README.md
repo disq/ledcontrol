@@ -26,7 +26,7 @@ Simple LED Control project for Raspberry Pi Pico.
 ### Connections
 
 - WS2812: Data on GP28. Power with 5V and GND.
-- RGB Encoder Breakout: Connect GP4,GP5 for I2C(SDA,SCL) and GP3 for interrupt. [Breakout Garden](https://shop.pimoroni.com/products/pico-breakout-garden-base) can be used.
+- RGB Encoder Breakout: Connect GP4,GP5 for I2C(SDA,SCL). [Breakout Garden](https://shop.pimoroni.com/products/pico-breakout-garden-base) can be used.
 - Button "A" to GP11
 - Button "B" to GP12
 - Button "C" to GP13 (optional)

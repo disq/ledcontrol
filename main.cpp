@@ -165,8 +165,8 @@ int main() {
             brightness = std::min(1.0f, std::max(MIN_BRIGHTNESS, brightness));
             led_strip.setBrightness((uint8_t)(brightness*BRIGHTNESS_SCALE));
             printf("new brightness: %f\n", brightness);
-            colour_cycle(hue, 0, angle);
             enc.set_brightness(brightness);
+            cycle = true;
             break;
 
           case ENCODER_MODE::SPEED:

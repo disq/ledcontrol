@@ -3,6 +3,7 @@
 Simple LED Control project for Raspberry Pi Pico.
 
 - [Hardware](#hardware)
+- [Usage](#usage)
 - [Before you start](#before-you-start)
 - [Prepare build environment](#prepare-build-environment)
 - [Grab the Pimoroni libraries](#grab-the-pimoroni-libraries)
@@ -17,15 +18,38 @@ Simple LED Control project for Raspberry Pi Pico.
 - Pimoroni [RGB Encoder Breakout](https://shop.pimoroni.com/products/rgb-encoder-breakout)
 - A [WS2812 LED strip](https://shop.pimoroni.com/collections/components?tags=LED%20Strip) or a bunch of [NeoPixels](https://www.adafruit.com/category/168)
 - Read [the uberguide](https://learn.adafruit.com/adafruit-neopixel-uberguide)
-- Three buttons, connecting various pins to GND when pressed (active low)
+- Two or three buttons, connecting various pins to GND when pressed (active low)
+- Optional: [Captain Resetti](https://shop.pimoroni.com/products/captain-resetti-pico-reset-button)
 
 ### Connections
 
 - WS2812: Data on GP28. Power with 5V and GND.
 - RGB Encoder Breakout: Connect GP4,GP5 for I2C(SDA,SCL) and GP3 for interrupt. [Breakout Garden](https://shop.pimoroni.com/products/pico-breakout-garden-base) can be used.
-- Button "A" to GP11. Changes encoder mode.
-- Button "B" to GP12. Enables cycling.
-- Button "C" to GP13. Resets effects.
+- Button "A" to GP11
+- Button "B" to GP12
+- Button "C" to GP13 (optional)
+
+## Usage
+
+### TL;DR
+- Button "A" changes encoder mode.
+- Button "B" enables cycling.
+- Button "C" resets effects. You could also reset the Pico to achieve the same effect.
+
+### Explanation
+
+Encoder LED colours indicate the current mode. Use Button A to switch between them. The modes are:
+
+- Off: Encoder disabled.
+- Yellow: Encoder is primed to change the start colour on the colour wheel.
+- Orange: Encoder is primed to change the end colour on the colour wheel. 
+- White/grey: You're changing the brightness.
+- Red: You're now changing the cycling speed.
+
+In the yellow or orange modes, cycling of colours is stopped with the first encoder click. Press button B to reenable.
+Cycling remains as-is when you're changing brightness or speed.
+
+Tip: Double-click the Captain Resetti to put it in bootloader mode.
 
 ## Before you start
 

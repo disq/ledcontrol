@@ -2,6 +2,8 @@
 
 Simple LED Control project for Raspberry Pi Pico.
 
+![image](./doc/cycle.gif)
+
 - [Hardware](#hardware)
 - [Usage](#usage)
 - [Before you start](#before-you-start)

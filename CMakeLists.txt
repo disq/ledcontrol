@@ -20,6 +20,7 @@ pico_sdk_init()
 # Add your source files
 add_executable(${NAME}
     main.cpp
+    enum.h
 )
 
 # Include required libraries

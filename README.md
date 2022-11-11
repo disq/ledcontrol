@@ -28,28 +28,29 @@ Simple LED Control project for Raspberry Pi Pico.
 - WS2812: Data on GP28. Power with 5V and GND.
 - RGB Encoder Breakout: Connect GP4,GP5 for I2C(SDA,SCL). [Breakout Garden](https://shop.pimoroni.com/products/pico-breakout-garden-base) can be used.
 - Button "A" to GP11
-- Button "B" to GP12
-- Button "C" to GP13 (optional)
+- Button "B" to GP12 (optional)
 
 ## Usage
 
 ### TL;DR
-- Button "A" changes encoder mode.
-- Button "B" re-enables cycling.
-- Button "C" resets effects. You could also reset the Pico to achieve the same effect.
+- Button "A" changes menu mode (choose setting or adjust chosen setting)
+- Button "B" resets effects. You could also reset the Pico to achieve the same effect.
 - Board LED is lit when cycling is stopped.
 
 ### Explanation
 
-Encoder LED colours indicate the current mode. Use Button A to switch between them. The modes are:
+Encoder LED colours indicate the current mode. If the LED is blinking, moving the encoder will change the chosen setting. If the LED is solid, moving the encoder will switch between different settings you can adjust.
+
+The modes are:
 
 - Off: Encoder disabled.
-- Yellow: Encoder is primed to change the start colour on the colour wheel.
-- Orange: Encoder is primed to change the end colour on the colour wheel. 
+- Yellow*: Encoder is primed to change the start colour on the colour wheel.
+- Orange*: Encoder is primed to change the end colour on the colour wheel. 
 - White/grey: You're changing the brightness.
 - Red: You're now changing the cycling speed.
+- Purple*: You're selecting an effect.
 
-In the yellow or orange modes, cycling of colours is stopped with the first encoder click and the board LED is lit. Press button B to re-enable.
+In the `*` designated modes, cycling of colours is stopped with the first encoder click and the board LED is lit. Get out of the edit mode by pressing button A to re-enable.
 
 Cycling remains as-is when you're changing brightness or speed.
 

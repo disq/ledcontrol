@@ -20,13 +20,13 @@ const uint NUM_LEDS = 151;
 const float_t DEFAULT_SPEED = 0.04f;
 
 // The hue that the LEDs will start at. 1.0f = 360 degrees
-const float_t DEFAULT_HUE = 0.8f;
+const float_t DEFAULT_HUE = 0.82f;
 
 // The angle (in degrees) from the hue, that the LEDs will end at (1.0f = 360 degrees)
-const float_t DEFAULT_ANGLE = 0.1f;
+const float_t DEFAULT_ANGLE = 0.24f;
 
 // The brightness to set the LEDs to. 1.0f = 100%
-const float_t DEFAULT_BRIGHTNESS = 0.1f;
+const float_t DEFAULT_BRIGHTNESS = 0.42f;
 const float_t MIN_BRIGHTNESS = 0.02f; // below this there's no meaningful output
 
 // How many times the LEDs will be updated per second
@@ -38,7 +38,6 @@ const float_t ENC_DEFAULT_BRIGHTNESS = 1.0f;
 const uint LED_DATA_PIN = 28;
 const uint BUTTON_A_PIN = 11;
 const uint BUTTON_B_PIN = 12;
-const uint BUTTON_C_PIN = 13;
 
 #ifndef RASPBERRYPI_PICO_W
 #define LED_PAUSED_PIN PICO_DEFAULT_LED_PIN
@@ -51,7 +50,6 @@ const float_t BRIGHTNESS_SCALE = 255;
 bool cycle;
 uint32_t encoder_last_blink = 0;
 bool encoder_blink_state = false;
-uint8_t effect_mode;
 
 using namespace pimoroni;
 
@@ -59,12 +57,18 @@ auto led_strip = PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_L
 
 Button button_a(BUTTON_A_PIN, Polarity::ACTIVE_LOW, 0);
 Button button_b(BUTTON_B_PIN, Polarity::ACTIVE_LOW, 0);
-Button button_c(BUTTON_C_PIN, Polarity::ACTIVE_LOW, 0);
 
 I2C i2c(BOARD::BREAKOUT_GARDEN);
 BreakoutEncoder enc(&i2c);
 
-enum ENCODER_MODE {
+enum MENU_MODE: uint8_t {
+    MENU_SELECT,
+    MENU_ADJUST,
+
+    MENU_COUNT
+};
+
+enum ENCODER_MODE: uint8_t {
     OFF,
     COLOUR,
     ANGLE,
@@ -75,12 +79,15 @@ enum ENCODER_MODE {
     MODE_COUNT
 };
 
-enum EFFECT_MODE {
+enum EFFECT_MODE: uint8_t {
     HUE_CYCLE,
     WHITE_CHASE,
 
     EFFECT_COUNT,
 };
+
+enum EFFECT_MODE effect_mode;
+enum MENU_MODE menu_mode;
 
 const enum EFFECT_MODE DEFAULT_EFFECT = HUE_CYCLE;
 
@@ -94,6 +101,15 @@ float wrap(float v, float min, float max) {
   return v;
 }
 
+signed int limiting_wrap(signed int v, int min, int max) {
+  if(v < min)
+    v += (max - min);
+
+  if(v >= max)
+    v -= (max - min);
+
+  return v;
+}
 
 void effect_cycle(float hue, float t, float angle) {
   auto hue_deg = hue * 360.0f;
@@ -201,6 +217,7 @@ int main() {
   float_t hue = DEFAULT_HUE;
   float_t angle = DEFAULT_ANGLE;
   effect_mode = DEFAULT_EFFECT;
+  menu_mode = MENU_SELECT;
 
   set_cycle(true);
 
@@ -215,65 +232,74 @@ int main() {
   uint32_t start_time = millis();
   while(true) {
     uint32_t t = millis() - start_time;
-    if(encoder_detected) {
-      if(enc.get_interrupt_flag()) {
-        int16_t count_raw = enc.read(); // Looks like -64 to +64, but we assume -10 to +10
-        float_t count = std::min(10.0f, std::max(-10.0f, (float_t)count_raw))/50.0f; // Max increase can be 20% per update
-        printf("[encoder] count: %d (%f)\n", count_raw, count);
-        enc.clear_interrupt_flag();
-        enc.clear();
+    if(encoder_detected && enc.get_interrupt_flag()) {
+      int16_t count_raw = enc.read(); // Looks like -64 to +64, but we assume -10 to +10
+      float_t count = std::min(10.0f, std::max(-10.0f, (float_t)count_raw))/50.0f; // Max increase can be 20% per update
+      printf("[encoder] count: %d (%f)\n", count_raw, count);
+      enc.clear_interrupt_flag();
+      enc.clear();
 
-        switch(mode) {
-          case ENCODER_MODE::OFF:
-            break;
+      switch(menu_mode) {
+        default:
+        case MENU_MODE::MENU_SELECT:
+          mode = (ENCODER_MODE)limiting_wrap(mode + (count < 0.0f ? -1 : 1), 0, ENCODER_MODE::MODE_COUNT);
+          printf("[mode] new mode: %d\n", mode);
+          encoder_state_by_mode(mode);
+          break;
+        case MENU_MODE::MENU_ADJUST:
+          if (mode == ENCODER_MODE::OFF) break;
 
-          case ENCODER_MODE::COLOUR:
-            hue += count;
-            hue = wrap(hue, 0.0f, 1.0f);
-            printf("new hue start angle: %f\n", hue);
-            effect_cycle(hue, 0, angle);
-            set_cycle(false);
-            break;
+          set_cycle(mode == ENCODER_MODE::SPEED);
 
-          case ENCODER_MODE::ANGLE:
-            angle += count;
-            angle = std::min(1.0f, std::max(0.0f, angle));
-            printf("new hue end angle: %f\n", angle);
-            effect_cycle(hue, 0, angle);
-            set_cycle(false);
-            break;
+          switch (mode) {
+            default:
+            case ENCODER_MODE::OFF:
+              break;
 
-          case ENCODER_MODE::BRIGHTNESS:
-            brightness += count;
-            brightness = std::min(1.0f, std::max(MIN_BRIGHTNESS, brightness));
-            printf("new brightness: %f\n", brightness);
-            led_strip.setBrightness((uint8_t)(brightness*BRIGHTNESS_SCALE));
-            enc.set_brightness(brightness);
-            set_cycle(true);
-            break;
+            case ENCODER_MODE::COLOUR:
+              hue += count;
+              hue = wrap(hue, 0.0f, 1.0f);
+              printf("new hue start angle: %f\n", hue);
+              effect_cycle(hue, 0, angle);
+              break;
 
-          case ENCODER_MODE::SPEED:
-            speed += count;
-            speed = std::min(1.0f, std::max(0.01f, speed));
-            printf("new speed: %f\n", speed);
-            set_cycle(true);
-            break;
+            case ENCODER_MODE::ANGLE:
+              angle += count;
+              angle = std::min(1.0f, std::max(0.0f, angle));
+              printf("new hue end angle: %f\n", angle);
+              effect_cycle(hue, 0, angle);
+              break;
 
-          case ENCODER_MODE::EFFECT:
-            effect_mode = (EFFECT_MODE)(((int)effect_mode + 1) % (int)EFFECT_MODE::EFFECT_COUNT);
-            printf("new effect: %d\n", effect_mode);
-            effect_cycle(hue, 0, angle);
-            set_cycle(false);
-            break;
+            case ENCODER_MODE::BRIGHTNESS:
+              brightness += count;
+              brightness = std::min(1.0f, std::max(MIN_BRIGHTNESS, brightness));
+              printf("new brightness: %f\n", brightness);
+              led_strip.setBrightness((uint8_t) (brightness * BRIGHTNESS_SCALE));
+              enc.set_brightness(brightness);
+              led_strip.show();
+              break;
+
+            case ENCODER_MODE::SPEED:
+              speed += count;
+              speed = std::min(1.0f, std::max(0.01f, speed));
+              printf("new speed: %f\n", speed);
+              break;
+
+            case ENCODER_MODE::EFFECT:
+              effect_mode = (EFFECT_MODE)limiting_wrap(effect_mode + (count < 0.0 ? -1 : 1), 0, EFFECT_MODE::EFFECT_COUNT);
+
+              printf("new effect: %d\n", effect_mode);
+              effect_cycle(hue, 0, angle);
+              break;
+          }
+          break;
         }
-      }
     }
     bool a_pressed = button_a.read();
     bool b_pressed = button_b.read();
-    bool c_pressed = button_c.read();
 
-    if(c_pressed) {
-      printf("C pressed! defaults\n");
+    if(b_pressed) {
+      printf("B pressed! defaults\n");
       speed = DEFAULT_SPEED;
       hue = DEFAULT_HUE;
       angle = DEFAULT_ANGLE;
@@ -281,26 +307,29 @@ int main() {
       effect_mode = DEFAULT_EFFECT;
       led_strip.setBrightness((uint8_t)(brightness*BRIGHTNESS_SCALE));
       mode = encoder_state_by_mode(ENCODER_MODE::OFF);
+      menu_mode = MENU_MODE::MENU_SELECT;
       set_cycle(true);
     }
 
-    if(b_pressed) {
-      if(!cycle)
-        start_time = millis();
-      set_cycle(true);
-    }
-
-    if (a_pressed) {
-      mode = (ENCODER_MODE)(((int)mode + 1) % (int)ENCODER_MODE::MODE_COUNT);
-      printf("[mode] new mode: %d\n", mode);
+    if (a_pressed && mode != ENCODER_MODE::OFF) {
+      menu_mode = (MENU_MODE)(((int)menu_mode + 1) % (int)MENU_MODE::MENU_COUNT);
+      printf("[menu] new menu selection: %d\n", menu_mode);
       encoder_state_by_mode(mode);
+
+      if(!cycle) {
+        start_time = millis();
+        set_cycle(true);
+      }
     }
 
     if(cycle) {
 //      printf("[cycle] hue: %f, angle: %f, speed: %f, brightness: %f\n", hue, angle, speed, brightness);
       effect_cycle(hue, (float) t * speed, angle);
     }
-    if (!cycle && mode != ENCODER_MODE::OFF) encoder_loop(mode);
+
+    if (menu_mode == MENU_MODE::MENU_ADJUST) {
+      encoder_loop(mode);
+    }
 
     // Sleep time controls the rate at which the LED buffer is updated
     // but *not* the actual framerate at which the buffer is sent to the LEDs

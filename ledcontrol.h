@@ -41,6 +41,16 @@ namespace ledcontrol {
             EFFECT_COUNT,
         };
 
+        // state of things
+        typedef struct {
+            float_t hue;
+            float_t angle;
+            float_t speed;
+            float_t brightness;
+            enum EFFECT_MODE effect_mode;
+            enum ENCODER_MODE mode;
+        } state_t;
+
         int init(); // returns: 0 for success
         uint32_t loop(); // returns: required sleep value in ms
 
@@ -51,18 +61,13 @@ namespace ledcontrol {
         pimoroni::I2C i2c;
         pimoroni::BreakoutEncoder enc;
 
-        // state things
-        enum EFFECT_MODE effect_mode;
+        state_t state;
         enum MENU_MODE menu_mode;
-        enum ENCODER_MODE mode;
-        float_t brightness;
         bool cycle{};
         uint32_t encoder_last_blink;
         bool encoder_blink_state;
         uint32_t start_time{}, stop_time;
-        float_t speed{}, hue{}, angle{};
         bool encoder_detected{};
-
 
         // private methods
         void cycle_loop(float hue, float t, float angle);

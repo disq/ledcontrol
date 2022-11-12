@@ -154,7 +154,7 @@ void LEDControl::init() {
 }
 
 void LEDControl::enable_state(state_t p_state) {
-  printf("[enable_state] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d effect:%d\n", state.hue, state.angle, state.speed, state.brightness, state.mode, state.effect);
+  printf("[enable_state] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d\n", state.hue, state.angle, state.speed, state.brightness, state.mode, state.effect);
 
   state = p_state;
   led_strip.setBrightness((uint8_t)(state.brightness*BRIGHTNESS_SCALE));
@@ -193,11 +193,11 @@ int LEDControl::save_state_to_flash() {
 
   // prepare the buffer
   uint8_t buffer[256];
-  memset(buffer, 0, sizeof(buffer));
+  memset(buffer, 0xcc, sizeof(buffer));
 
   flash_state_t fs = {
     .state_size = sizeof(state_t),
-    .state = state
+    .state = state,
   };
   memcpy(fs.magic, flash_save_magic, strlen(flash_save_magic));
   memcpy(buffer, &fs, sizeof(flash_state_t));
@@ -205,7 +205,8 @@ int LEDControl::save_state_to_flash() {
 //  print_buf(buffer, sizeof(buffer));
 
   uint32_t ints = save_and_disable_interrupts();
-  flash_range_program(FLASH_TARGET_OFFSET, buffer, 256);
+  flash_range_erase(FLASH_TARGET_OFFSET, sizeof(buffer));
+  flash_range_program(FLASH_TARGET_OFFSET, buffer, sizeof(buffer));
   restore_interrupts(ints);
 
   printf("save_state_to_flash: success\n");
@@ -325,8 +326,7 @@ uint32_t LEDControl::loop() {
       if (!cycle) {
         set_cycle(true);
         t = pimoroni::millis() - start_time;
-        printf("[cycle] hue: %f, angle: %f, speed: %f, brightness: %f\n", state.hue, state.angle, state.speed,
-               state.brightness);
+        printf("[cycle] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d\n", state.hue, state.angle, state.speed, state.brightness, state.mode, state.effect);
       }
     }
   }

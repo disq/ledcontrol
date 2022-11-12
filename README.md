@@ -34,8 +34,9 @@ Simple LED Control project for Raspberry Pi Pico.
 
 ### TL;DR
 - Button "A" changes menu mode (choose setting or adjust chosen setting)
-- Button "B" resets effects. You could also reset the Pico to achieve the same effect.
+- Button "B" resets effects to default settings. You could also reset the Pico to achieve the same effect.
 - Board LED is lit when cycling is stopped.
+- Hold button "B" for 2 seconds to save current settings to flash. These will be loaded on boot, and will be used as default settings.
 
 ### Explanation
 

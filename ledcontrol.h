@@ -47,19 +47,25 @@ namespace ledcontrol {
             float_t angle;
             float_t speed;
             float_t brightness;
-            enum EFFECT_MODE effect_mode;
+            enum EFFECT_MODE effect;
             enum ENCODER_MODE mode;
         } state_t;
 
-        int init(); // returns: 0 for success
+        void init();
         uint32_t loop(); // returns: required sleep value in ms
+        void enable_state(state_t p_state);
+        state_t get_state();
+
+        // flashy things
+        int load_state_from_flash();
+        int save_state_to_flash();
 
     private:
-        // hardware things
         PicoLed::PicoLedController led_strip;
         pimoroni::Button button_a, button_b;
         pimoroni::I2C i2c;
         pimoroni::BreakoutEncoder enc;
+        const char flash_save_magic[8] = "LEDCTRL";
 
         state_t state;
         enum MENU_MODE menu_mode;
@@ -68,6 +74,12 @@ namespace ledcontrol {
         bool encoder_blink_state;
         uint32_t start_time{}, stop_time;
         bool encoder_detected{};
+
+        typedef struct {
+            char magic[8];
+            size_t state_size;
+            state_t state;
+        } flash_state_t;
 
         // private methods
         void cycle_loop(float hue, float t, float angle);

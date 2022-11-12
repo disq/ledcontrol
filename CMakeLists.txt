@@ -38,6 +38,8 @@ target_link_libraries(${NAME}
         button
         hardware_pio
         PicoLed
+        hardware_flash
+        hardware_sync
         pico_bootsel_via_double_reset
 )
 

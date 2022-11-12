@@ -26,7 +26,7 @@ const LEDControl::state_t DEFAULT_STATE = {
     .brightness = 0.5f,
 
     // Default effect we start at
-    .effect_mode = LEDControl::EFFECT_MODE::HUE_CYCLE,
+    .effect = LEDControl::EFFECT_MODE::HUE_CYCLE,
 
     // Default encoder mode we start at
     .mode = LEDControl::ENCODER_MODE::OFF,
@@ -49,6 +49,10 @@ const uint BUTTON_B_PIN = 12;
 
 #ifndef RASPBERRYPI_PICO_W
 #define LED_PAUSED_PIN PICO_DEFAULT_LED_PIN
+#define BOARD_LED_PIN PICO_DEFAULT_LED_PIN
 #endif
+
+// A region 1.5MB from the start of flash.
+#define FLASH_TARGET_OFFSET (1536 * 1024)
 
 #endif //CONFIG_H

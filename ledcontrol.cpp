@@ -1,11 +1,14 @@
 #include "ledcontrol.h"
 #include <cstdint>
 #include <common/pimoroni_common.hpp>
+#include <cstring>
 
 #include "pico/stdlib.h"
 #ifdef RASPBERRYPI_PICO_W
 #include "pico/cyw43_arch.h"
 #endif
+#include "hardware/flash.h"
+#include "hardware/sync.h"
 
 #include "ledcontrol.h"
 #include "util.h"
@@ -37,7 +40,7 @@ void LEDControl::cycle_loop(float hue, float t, float angle) {
     float offset = sinf((percent_along + 0.5f + t) * M_PI) * angle_deg;
     float h = wrap((hue_deg + offset) / 360.0f, 0.0f, 1.0f);
 
-    switch(state.effect_mode) {
+    switch(state.effect) {
       case EFFECT_MODE::HUE_CYCLE:
       default:
         led_strip.setPixelColor(i, PicoLed::HSV(uint8_t(h*255.0f), 255.0f, 255.0f));
@@ -126,33 +129,88 @@ LEDControl::ENCODER_MODE LEDControl::encoder_state_by_mode(ENCODER_MODE mode) {
   return mode;
 }
 
-int LEDControl::init() {
+void LEDControl::init() {
 #ifdef LED_PAUSED_PIN
   gpio_init(LED_PAUSED_PIN);
   gpio_set_dir(LED_PAUSED_PIN, GPIO_OUT);
   gpio_put(LED_PAUSED_PIN, false);
 #endif
 #ifdef RASPBERRYPI_PICO_W
-  if (cyw43_arch_init()) {
-      printf("WiFi init failed");
-      return -1;
-    }
   cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 #endif
-
-  state = DEFAULT_STATE;
-  menu_mode = MENU_SELECT;
-
-  start_time = pimoroni::millis();
-  set_cycle(true);
-
-  led_strip.setBrightness((uint8_t)(state.brightness*BRIGHTNESS_SCALE));
-  led_strip.show();
 
   encoder_detected = enc.init();
   enc.clear_interrupt_flag();
 
+  if (load_state_from_flash() != 0) {
+    printf("failed to load state from flash, using defaults\n");
+    enable_state(DEFAULT_STATE);
+  }
+
+  menu_mode = MENU_SELECT;
+
+  start_time = pimoroni::millis();
+  set_cycle(true);
+}
+
+void LEDControl::enable_state(state_t p_state) {
+  printf("[enable_state] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d effect:%d\n", state.hue, state.angle, state.speed, state.brightness, state.mode, state.effect);
+
+  state = p_state;
+  led_strip.setBrightness((uint8_t)(state.brightness*BRIGHTNESS_SCALE));
+  led_strip.show();
   encoder_state_by_mode(state.mode);
+}
+
+LEDControl::state_t LEDControl::get_state() {
+  return state;
+}
+
+int LEDControl::load_state_from_flash() {
+  auto *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
+
+//  print_buf(flash_target_contents, 256);
+
+  uint8_t buffer[256];
+  memcpy(buffer, flash_target_contents, sizeof(buffer));
+
+  auto *flash_state = (flash_state_t *)buffer;
+  if (memcmp(flash_state->magic, flash_save_magic, strlen(flash_save_magic)) != 0) {
+    printf("load_state_from_flash: invalid state magic\n");
+    return -1;
+  }
+  if (flash_state->state_size != sizeof(state_t)) {
+    printf("load_state_from_flash: invalid state_t size\n");
+    return -2;
+  }
+  enable_state(flash_state->state);
+
+  return 0;
+}
+
+int LEDControl::save_state_to_flash() {
+  printf("save_state_to_flash: start\n");
+
+  // prepare the buffer
+  uint8_t buffer[256];
+  memset(buffer, 0, sizeof(buffer));
+
+  flash_state_t fs = {
+    .state_size = sizeof(state_t),
+    .state = state
+  };
+  memcpy(fs.magic, flash_save_magic, strlen(flash_save_magic));
+  memcpy(buffer, &fs, sizeof(flash_state_t));
+
+//  print_buf(buffer, sizeof(buffer));
+
+  uint32_t ints = save_and_disable_interrupts();
+  flash_range_program(FLASH_TARGET_OFFSET, buffer, 256);
+  restore_interrupts(ints);
+
+  printf("save_state_to_flash: success\n");
+
+//  LEDControl::load_state_from_flash();
   return 0;
 }
 
@@ -206,9 +264,9 @@ uint32_t LEDControl::loop() {
             break;
 
           case ENCODER_MODE::EFFECT:
-            state.effect_mode = (EFFECT_MODE)limiting_wrap(state.effect_mode + (count < 0.0 ? -1 : 1), 0, EFFECT_MODE::EFFECT_COUNT);
+            state.effect = (EFFECT_MODE)limiting_wrap(state.effect + (count < 0.0 ? -1 : 1), 0, EFFECT_MODE::EFFECT_COUNT);
 
-            printf("new effect: %d\n", state.effect_mode);
+            printf("new effect: %d\n", state.effect);
             break;
         }
 
@@ -223,14 +281,35 @@ uint32_t LEDControl::loop() {
         }
     }
   }
-  bool a_pressed = button_a.read();
-  bool b_pressed = button_b.read();
+  auto a_val = wait_for_long_button(button_a, 1500);
+  bool a_pressed = a_val == 1;
+  bool a_held = a_val == 2;
+
+  auto b_val = wait_for_long_button(button_b, 1500);
+  bool b_pressed = b_val == 1;
+  bool b_held = b_val == 2;
+
+  if (a_pressed || a_held) {
+    printf("[button] A pressed:%d held:%d\n", a_pressed, a_held);
+  }
+  if (b_pressed || b_held) {
+    printf("[button] B pressed:%d held:%d\n", b_pressed, b_held);
+  }
+
+  if(b_held) {
+    led_strip.setBrightness(0);
+    led_strip.show();
+    printf("B held\n");
+    sleep_ms(1500);
+    save_state_to_flash();
+
+    led_strip.setBrightness((uint8_t)(state.brightness*BRIGHTNESS_SCALE));
+    led_strip.show();
+  }
 
   if(b_pressed) {
-    printf("B pressed! defaults\n");
-    state = DEFAULT_STATE;
-    led_strip.setBrightness((uint8_t)(state.brightness*BRIGHTNESS_SCALE));
-    encoder_state_by_mode(state.mode);
+    printf("B pressed! saved state or defaults\n");
+    enable_state(DEFAULT_STATE);
     menu_mode = MENU_MODE::MENU_SELECT;
     set_cycle(true);
   }

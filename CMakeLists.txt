@@ -19,8 +19,7 @@ pico_sdk_init()
 
 # Add your source files
 add_executable(${NAME}
-    main.cpp
-    enum.h
+    main.cpp ledcontrol.cpp ledcontrol.h util.h config.h
 )
 
 # Include required libraries

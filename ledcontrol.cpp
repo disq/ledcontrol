@@ -314,14 +314,20 @@ uint32_t LEDControl::loop() {
     set_cycle(true);
   }
 
-  if (a_pressed && state.mode != ENCODER_MODE::OFF) {
-    menu_mode = (MENU_MODE)(((int)menu_mode + 1) % (int)MENU_MODE::MENU_COUNT);
-    printf("[menu] new menu selection: %d\n", menu_mode);
-    encoder_state_by_mode(state.mode);
-    if (!cycle) {
-      set_cycle(true);
-      t = pimoroni::millis() - start_time;
-      printf("[cycle] hue: %f, angle: %f, speed: %f, brightness: %f\n", state.hue, state.angle, state.speed, state.brightness);
+  if (a_pressed) {
+    if (state.mode == ENCODER_MODE::OFF) { // If we're off, switch to first mode
+      state.mode = ENCODER_MODE::COLOUR;
+      encoder_state_by_mode(state.mode);
+    } else {
+      menu_mode = (MENU_MODE)(((int) menu_mode + 1) % (int) MENU_MODE::MENU_COUNT);
+      printf("[menu] new menu selection: %d\n", menu_mode);
+      encoder_state_by_mode(state.mode);
+      if (!cycle) {
+        set_cycle(true);
+        t = pimoroni::millis() - start_time;
+        printf("[cycle] hue: %f, angle: %f, speed: %f, brightness: %f\n", state.hue, state.angle, state.speed,
+               state.brightness);
+      }
     }
   }
 

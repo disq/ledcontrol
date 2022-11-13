@@ -34,7 +34,9 @@ const LEDControl::state_t DEFAULT_STATE = {
 
 // More configuration
 const float_t MIN_BRIGHTNESS = 0.02f; // below this there's no meaningful output
-// TODO add MAX_BRIGHTNESS and MAX_SPEED
+const float_t MAX_BRIGHTNESS = 1.0f;
+const float_t MIN_SPEED = 0.01f;
+const float_t MAX_SPEED = 0.5f; // let's be safe and not trigger anyone
 
 // How many times the LEDs will be updated per second
 const uint UPDATES = 60;

@@ -258,7 +258,7 @@ uint32_t LEDControl::loop() {
             break;
 
           case ENCODER_MODE::BRIGHTNESS:
-            state.brightness = std::min(1.0f, std::max(MIN_BRIGHTNESS, state.brightness + count));
+            state.brightness = std::min(MAX_BRIGHTNESS, std::max(MIN_BRIGHTNESS, state.brightness + count));
             printf("new brightness: %f\n", state.brightness);
             led_strip.setBrightness((uint8_t) (state.brightness * BRIGHTNESS_SCALE));
             enc->set_brightness(state.brightness);
@@ -266,7 +266,7 @@ uint32_t LEDControl::loop() {
             break;
 
           case ENCODER_MODE::SPEED:
-            state.speed = std::min(1.0f, std::max(0.01f, state.speed + count));
+            state.speed = std::min(MAX_SPEED, std::max(MIN_SPEED, state.speed + count));
             printf("new speed: %f\n", state.speed);
             break;
 

@@ -25,6 +25,8 @@ Simple LED Control project for Raspberry Pi Pico.
 
 ### Connections
 
+Only a single (right) side of the Pico is used for connections to allow for creative mounting options.
+
 - WS2812: Data on GP28. Power with 5V and GND.
 - Rotary Encoder with LED and button: 8 connections, believe or not!
   - LED connections: Green to GP16, Blue to GP17, Red to GP18
@@ -33,7 +35,7 @@ Simple LED Control project for Raspberry Pi Pico.
   - SW to GP21
 - Optional: Button "B" to GP27. Connect the other end of the button to any GND pin.
 
-[Pinout schema here](./doc/pinout.png)
+[Pinout diagram here](./doc/pinout.png)
 
 ## Usage
 

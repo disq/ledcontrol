@@ -7,12 +7,11 @@
 Encoder::Encoder() {
 }
 
-void Encoder::init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b, int p_pin_led_common,
+void Encoder::init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b,
                    int p_pin_enc_a, int p_pin_enc_b, int p_pin_enc_sw, bool p_leds_active_low) {
   pin_led_r = p_pin_led_r;
   pin_led_g = p_pin_led_g;
   pin_led_b = p_pin_led_b;
-  pin_led_common = p_pin_led_common;
   pin_enc_a = p_pin_enc_a;
   pin_enc_b = p_pin_enc_b;
   pin_enc_sw = p_pin_enc_sw;
@@ -21,7 +20,6 @@ void Encoder::init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b, int p_pin_
   led_pins[0] = pin_led_r;
   led_pins[1] = pin_led_g;
   led_pins[2] = pin_led_b;
-  led_pins[3] = pin_led_common;
   in_pins[0] = pin_enc_a;
   in_pins[1] = pin_enc_b;
   in_pins[2] = pin_enc_sw;
@@ -29,17 +27,6 @@ void Encoder::init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b, int p_pin_
   for (auto pin : led_pins) {
       gpio_init(pin);
       gpio_set_dir(pin, GPIO_OUT);
-
-      if (pin == pin_led_common) {
-        if (leds_active_low) {
-          gpio_pull_down(pin);
-          gpio_put(pin, true);
-        } else {
-          gpio_pull_up(pin);
-          gpio_put(pin, false);
-        }
-        continue;
-      }
 
       if (leds_active_low) {
         gpio_pull_up(pin);
@@ -89,12 +76,6 @@ void Encoder::set_leds(uint8_t r, uint8_t g, uint8_t b) {
   gpio_put(pin_led_r, !r_on ? leds_active_low : !leds_active_low);
   gpio_put(pin_led_g, !g_on ? leds_active_low : !leds_active_low);
   gpio_put(pin_led_b, !b_on ? leds_active_low : !leds_active_low);
-
-  if (r_on || g_on || b_on) {
-    gpio_put(pin_led_common, leds_active_low ? true : false);
-  } else {
-    gpio_put(pin_led_common, leds_active_low ? false : true);
-  }
 }
 
 void Encoder::set_brightness(float brightness) {

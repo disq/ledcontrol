@@ -8,7 +8,7 @@ class Encoder {
   private:
     int pin_led_r, pin_led_g, pin_led_b, pin_led_common;
     int pin_enc_a, pin_enc_b, pin_enc_sw; // connect encoder pin C to ground
-    int led_pins[4], in_pins[3];
+    int led_pins[3], in_pins[3];
     bool leds_active_low;
 
     int rotary_counter = 0;
@@ -20,7 +20,7 @@ class Encoder {
 
 public:
     Encoder();
-    void init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b, int p_pin_led_common, int p_pin_enc_a, int p_pin_enc_b, int p_pin_enc_sw, bool p_leds_active_low = true);
+    void init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b, int p_pin_enc_a, int p_pin_enc_b, int p_pin_enc_sw, bool p_leds_active_low = true);
     void set_leds(uint8_t r, uint8_t g, uint8_t b);
     void set_brightness(float brightness);
 

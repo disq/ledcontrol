@@ -137,7 +137,7 @@ void LEDControl::set_encoder_state() {
 
 void LEDControl::init(Encoder *e) {
   enc = e;
-  enc->init(ROT_LEDR, ROT_LEDG, ROT_LEDB, ROT_LEDCOMMON, ROT_A, ROT_B, ROT_C, ROT_SW);
+  enc->init(ROT_LEDR, ROT_LEDG, ROT_LEDB, ROT_A, ROT_B, ROT_C, ROT_SW);
 
 #ifdef LED_PAUSED_PIN
   gpio_init(LED_PAUSED_PIN);

@@ -44,12 +44,11 @@ const float_t ENC_DEFAULT_BRIGHTNESS = 1.0f;
 
 // See connections section in README
 const uint LED_DATA_PIN = 28;
-const uint BUTTON_B_PIN = 12;
+const uint BUTTON_B_PIN = 27;
 
 #define ROT_LEDG 16 // green LED (white cable)
 #define ROT_LEDB 17 // blue LED (brown cable)
 #define ROT_LEDR 18 // red LED (grey cable)
-#define ROT_LEDCOMMON 22 // LED common (red cable) optional
 #define ROT_A 19 // rotary A (green cable?)
 #define ROT_B 20 // rotary B (blue cable?)
 #define ROT_C 21 // rotary C (purple cable?)

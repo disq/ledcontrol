@@ -35,7 +35,7 @@ Only a single (right) side of the Pico is used for connections to allow for crea
   - SW to GP21
 - Optional: Button "B" to GP27. Connect the other end of the button to any GND pin.
 
-[Pinout diagram here](./doc/pinout.png)
+Pinout diagram is [here](./doc/pinout.png) or [from the back](./doc/pinout-back.png) (courtesy of [pinout.xyz](https://pico.pinout.xyz/))
 
 ## Usage
 

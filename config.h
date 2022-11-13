@@ -53,8 +53,7 @@ const uint BUTTON_B_PIN = 27;
 #define ROT_LEDR 18 // red LED (grey cable)
 #define ROT_A 19 // rotary A (green cable?)
 #define ROT_B 20 // rotary B (blue cable?)
-#define ROT_C 21 // rotary C (purple cable?)
-#define ROT_SW 22 // rotary pushbutton (black cable)
+#define ROT_SW 21 // rotary pushbutton (black cable)
 
 #ifndef RASPBERRYPI_PICO_W
 #define LED_PAUSED_PIN PICO_DEFAULT_LED_PIN

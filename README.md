@@ -29,10 +29,11 @@ Simple LED Control project for Raspberry Pi Pico.
 - Rotary Encoder with LED and button: 8 connections, believe or not!
   - LED connections: Green to GP16, Blue to GP17, Red to GP18
   - LED common anode to 3.3v (Pin 36)
-  - Rotary encoder: A to GP19, B to GP20, C to GP21
-  - SW to GP22
+  - Rotary encoder: A to GP19, B to GP20, C to GND (Pin 23)
+  - SW to GP21
 - Optional: Button "B" to GP27. Connect the other end of the button to any GND pin.
 
+[Pinout schema here](./doc/pinout.png)
 
 ## Usage
 

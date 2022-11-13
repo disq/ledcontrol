@@ -18,7 +18,7 @@ Simple LED Control project for Raspberry Pi Pico.
 
 - Raspberry Pi [Pico](https://shop.pimoroni.com/products/raspberry-pi-pico) or [Pico W](https://shop.pimoroni.com/products/raspberry-pi-pico-w)
 - Sparkfun [RGB Rotary Encoder](https://shop.pimoroni.com/products/rotary-encoder-illuminated-rgb) with built-in push button, and optionally the [breakout](https://shop.pimoroni.com/products/sparkfun-rotary-encoder-breakout-illuminated-rg-rgb)
-- A [WS2812 LED strip](https://shop.pimoroni.com/collections/components?tags=LED%20Strip) or a bunch of [NeoPixels](https://www.adafruit.com/category/168)
+- A WS2812/SK6812 [LED strip](https://shop.pimoroni.com/collections/components?tags=LED%20Strip) or a bunch of [NeoPixels](https://www.adafruit.com/category/168)
 - Read [the uberguide](https://learn.adafruit.com/adafruit-neopixel-uberguide)
 - Optional: An extra button if you want to load/save your colour schemes.
 - Optional: [Captain Resetti](https://shop.pimoroni.com/products/captain-resetti-pico-reset-button) to return to default colours, or just replug the board.
@@ -27,7 +27,7 @@ Simple LED Control project for Raspberry Pi Pico.
 
 Only a single (right) side of the Pico is used for connections to allow for creative mounting options.
 
-- WS2812: Data on GP28. Power with 5V and GND.
+- WS2812/SK6812 LED strip: Data on GP28. Power with 5V and GND.
 - Rotary Encoder with LED and button: 8 connections, believe or not!
   - LED connections: Green to GP16, Blue to GP17, Red to GP18
   - LED common anode to 3.3v (Pin 36)

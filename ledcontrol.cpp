@@ -22,10 +22,7 @@ LEDControl::LEDControl():
     encoder_blink_state(false),
     stop_time(0),
     led_strip(PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, PicoLed::FORMAT_WRGB)),
-    button_a(pimoroni::Button(BUTTON_A_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
-    button_b(pimoroni::Button(BUTTON_B_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
-    i2c(pimoroni::I2C(pimoroni::BOARD::BREAKOUT_GARDEN)),
-    enc(pimoroni::BreakoutEncoder(&i2c))
+    button_b(pimoroni::Button(BUTTON_B_PIN, pimoroni::Polarity::ACTIVE_LOW, 0))
 {
 }
 
@@ -54,7 +51,7 @@ void LEDControl::cycle_loop(float hue, float t, float angle) {
 }
 
 uint16_t LEDControl::get_paused_time() {
-  return cycle ? 0 : pimoroni::millis() - stop_time;
+  return cycle ? 0 : millis() - stop_time;
 }
 
 void LEDControl::set_cycle(bool v) {
@@ -62,7 +59,7 @@ void LEDControl::set_cycle(bool v) {
 
   // don't set `cycle` before calling get_paused_time below, or we'll get a false reading
   if (!v) {
-    stop_time = pimoroni::millis();
+    stop_time = millis();
   } else {
     // adjust start time to account for time spent paused
     start_time += get_paused_time();
@@ -89,7 +86,7 @@ uint32_t LEDControl::encoder_colour_by_mode(LEDControl::ENCODER_MODE mode) {
       col = 0xFFFF00; // yellow
       break;
     case ENCODER_MODE::ANGLE:
-      col = 0xFF8000; // orange
+      col = 0x0000FF; // blue
       break;
     case ENCODER_MODE::BRIGHTNESS:
       col = 0xFFFFFF; // white
@@ -105,17 +102,21 @@ uint32_t LEDControl::encoder_colour_by_mode(LEDControl::ENCODER_MODE mode) {
   uint8_t col_g = (col >> 8) & 0xFF;
   uint8_t col_b = col & 0xFF;
   if (encoder_blink_state) {
-    col_r = col_r >> 1;
-    col_g = col_g >> 1;
-    col_b = col_b >> 1;
+    // TODO reenable this after PWM
+//    col_r = col_r >> 1;
+//    col_g = col_g >> 1;
+//    col_b = col_b >> 1;
+    col_r = 0;
+    col_g = 0;
+    col_b = 0;
   }
-  enc.set_led(col_r, col_g, col_b);
+  enc->set_leds(col_r, col_g, col_b);
   return col;
 }
 
 void LEDControl::encoder_loop(LEDControl::ENCODER_MODE mode) {
   const uint32_t encoder_blink_interval = 500;
-  uint32_t ts = pimoroni::millis();
+  uint32_t ts = millis();
   if (encoder_last_blink == 0 || (encoder_last_blink + encoder_blink_interval)<ts) {
     encoder_last_blink = ts;
     encoder_blink_state = !encoder_blink_state;
@@ -124,12 +125,15 @@ void LEDControl::encoder_loop(LEDControl::ENCODER_MODE mode) {
 }
 
 LEDControl::ENCODER_MODE LEDControl::encoder_state_by_mode(ENCODER_MODE mode) {
-  enc.set_brightness(mode == ENCODER_MODE::BRIGHTNESS ? state.brightness : ENC_DEFAULT_BRIGHTNESS);
+  enc->set_brightness(mode == ENCODER_MODE::BRIGHTNESS ? state.brightness : ENC_DEFAULT_BRIGHTNESS);
   encoder_colour_by_mode(mode);
   return mode;
 }
 
-void LEDControl::init() {
+void LEDControl::init(Encoder *e) {
+  enc = e;
+  enc->init(ROT_LEDR, ROT_LEDG, ROT_LEDB, ROT_LEDCOMMON, ROT_A, ROT_B, ROT_C, ROT_SW);
+
 #ifdef LED_PAUSED_PIN
   gpio_init(LED_PAUSED_PIN);
   gpio_set_dir(LED_PAUSED_PIN, GPIO_OUT);
@@ -139,9 +143,6 @@ void LEDControl::init() {
   cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 #endif
 
-  encoder_detected = enc.init();
-  enc.clear_interrupt_flag();
-
   if (load_state_from_flash() != 0) {
     printf("failed to load state from flash, using defaults\n");
     enable_state(DEFAULT_STATE);
@@ -149,7 +150,7 @@ void LEDControl::init() {
 
   menu_mode = MENU_SELECT;
 
-  start_time = pimoroni::millis();
+  start_time = millis();
   set_cycle(true);
 }
 
@@ -217,12 +218,12 @@ int LEDControl::save_state_to_flash() {
 
 uint32_t LEDControl::loop() {
   uint32_t t = pimoroni::millis() - start_time;
-  if(encoder_detected && enc.get_interrupt_flag()) {
-    int16_t count_raw = enc.read(); // Looks like -64 to +64, but we assume -10 to +10
+  if(enc->get_interrupt_flag()) {
+    signed int count_raw = enc->read(); // Looks like -64 to +64, but we assume -10 to +10
     float_t count = std::min(10.0f, std::max(-10.0f, (float_t)count_raw))/50.0f; // Max increase can be 20% per update
     printf("[encoder] count: %d (%f)\n", count_raw, count);
-    enc.clear_interrupt_flag();
-    enc.clear();
+    enc->clear_interrupt_flag();
+    enc->clear();
 
     switch(menu_mode) {
       default:
@@ -255,7 +256,7 @@ uint32_t LEDControl::loop() {
             state.brightness = std::min(1.0f, std::max(MIN_BRIGHTNESS, state.brightness + count));
             printf("new brightness: %f\n", state.brightness);
             led_strip.setBrightness((uint8_t) (state.brightness * BRIGHTNESS_SCALE));
-            enc.set_brightness(state.brightness);
+            enc->set_brightness(state.brightness);
             led_strip.show();
             break;
 
@@ -282,17 +283,14 @@ uint32_t LEDControl::loop() {
         }
     }
   }
-  auto a_val = wait_for_long_button(button_a, 1500);
-  bool a_pressed = a_val == 1;
-  bool a_held = a_val == 2;
 
   auto b_val = wait_for_long_button(button_b, 1500);
   bool b_pressed = b_val == 1;
   bool b_held = b_val == 2;
 
-  if (a_pressed || a_held) {
-    printf("[button] A pressed:%d held:%d\n", a_pressed, a_held);
-  }
+  bool a_pressed = enc->get_clicked();
+  if (a_pressed) enc->clear_clicked();
+
   if (b_pressed || b_held) {
     printf("[button] B pressed:%d held:%d\n", b_pressed, b_held);
   }

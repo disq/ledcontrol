@@ -17,23 +17,27 @@ Simple LED Control project for Raspberry Pi Pico.
 ## Hardware
 
 - Raspberry Pi [Pico](https://shop.pimoroni.com/products/raspberry-pi-pico) or [Pico W](https://shop.pimoroni.com/products/raspberry-pi-pico-w)
-- Pimoroni [RGB Encoder Breakout](https://shop.pimoroni.com/products/rgb-encoder-breakout)
+- Sparkfun [RGB Rotary Encoder](https://shop.pimoroni.com/products/rotary-encoder-illuminated-rgb) with built-in push button, and optionally the [breakout](https://shop.pimoroni.com/products/sparkfun-rotary-encoder-breakout-illuminated-rg-rgb)
 - A [WS2812 LED strip](https://shop.pimoroni.com/collections/components?tags=LED%20Strip) or a bunch of [NeoPixels](https://www.adafruit.com/category/168)
 - Read [the uberguide](https://learn.adafruit.com/adafruit-neopixel-uberguide)
-- Two or three buttons, connecting various pins to GND when pressed (active low)
-- Optional: [Captain Resetti](https://shop.pimoroni.com/products/captain-resetti-pico-reset-button)
+- Optional: An extra button if you want to load/save your colour schemes.
+- Optional: [Captain Resetti](https://shop.pimoroni.com/products/captain-resetti-pico-reset-button) to return to default colours, or just replug the board.
 
 ### Connections
 
 - WS2812: Data on GP28. Power with 5V and GND.
-- RGB Encoder Breakout: Connect GP4,GP5 for I2C(SDA,SCL). [Breakout Garden](https://shop.pimoroni.com/products/pico-breakout-garden-base) can be used.
-- Button "A" to GP11
-- Button "B" to GP12 (optional)
+- Rotary Encoder with LED and button: 8 connections, believe or not!
+  - LED connections: Green to GP16, Blue to GP17, Red to GP18
+  - LED common anode to 5v (Pin 40?) or optionally GP22. Lower voltages won't work with all colours.
+  - Rotary encoder: A to GP19, B to GP20, C to GP21
+  - SW to GP22
+- Optional: Button "B" to GP12. Connect the other end of the button to any GND pin.
+
 
 ## Usage
 
 ### TL;DR
-- Button "A" changes menu mode (choose setting or adjust chosen setting)
+- Pushing the rotary encoder in changes menu mode (choose setting or adjust chosen setting)
 - Button "B" resets effects to default settings. You could also reset the Pico to achieve the same effect.
 - Board LED is lit when cycling is stopped.
 - Hold button "B" for 2 seconds to save current settings to flash. These will be loaded on boot, and will be used as default settings.
@@ -46,12 +50,12 @@ The modes are:
 
 - Off: Encoder disabled.
 - Yellow*: Encoder is primed to change the start colour on the colour wheel.
-- Orange*: Encoder is primed to change the end colour on the colour wheel. 
+- Blue*: Encoder is primed to change the end colour on the colour wheel. (wip)
 - White/grey: You're changing the brightness.
 - Red: You're now changing the cycling speed.
 - Purple*: You're selecting an effect.
 
-In the `*` designated modes, cycling of colours is stopped with the first encoder click and the board LED is lit. Get out of the edit mode by pressing button A to re-enable.
+In the `*` designated modes, cycling of colours is stopped with the first encoder click and the board LED is lit. Get out of the edit mode by pressing the encoder in, to re-enable.
 
 Cycling remains as-is when you're changing brightness or speed.
 

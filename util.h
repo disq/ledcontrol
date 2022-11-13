@@ -23,11 +23,15 @@ signed int limiting_wrap(signed int v, int min, int max) {
   return v;
 }
 
+inline uint32_t millis() {
+  return to_ms_since_boot(get_absolute_time());
+}
+
 uint8_t wait_for_long_button(pimoroni::Button b, uint16_t long_duration) {
   uint8_t cur_mode = 0;
-  uint32_t start = pimoroni::millis();
+  uint32_t start = millis();
   while (b.raw()) {
-    uint32_t diff = pimoroni::millis() - start;
+    uint32_t diff = millis() - start;
     if (cur_mode == 0 && diff < long_duration) {
       cur_mode = 1;
     } else if (cur_mode == 1 && diff >= long_duration) {

@@ -19,7 +19,7 @@ pico_sdk_init()
 
 # Add your source files
 add_executable(${NAME}
-    main.cpp ledcontrol.cpp ledcontrol.h util.h config.h
+    main.cpp ledcontrol.cpp ledcontrol.h util.h config.h encoder.cpp encoder.h
 )
 
 # Include required libraries
@@ -33,8 +33,6 @@ include(PicoLED/PicoLed.cmake)
 # Don't forget to link the libraries you need!
 target_link_libraries(${NAME}
         pico_stdlib
-        pimoroni_i2c
-        breakout_encoder
         button
         hardware_pio
         PicoLed

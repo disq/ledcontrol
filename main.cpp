@@ -34,7 +34,7 @@ int main() {
   }
 
   auto leds = ledcontrol::LEDControl();
-  leds.init();
+  leds.init(&encoder);
 
   while(true) {
     sleep_ms(leds.loop());

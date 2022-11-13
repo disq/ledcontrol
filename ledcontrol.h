@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <cmath>
 #include <common/pimoroni_common.hpp>
-#include "breakout_encoder.hpp"
 #include "button.hpp"
 #include "PicoLed.hpp"
+#include "encoder.h"
 
 namespace ledcontrol {
 
@@ -51,7 +51,7 @@ namespace ledcontrol {
             enum ENCODER_MODE mode;
         } state_t;
 
-        void init();
+        void init(Encoder *e);
         uint32_t loop(); // returns: required sleep value in ms
         void enable_state(state_t p_state);
         state_t get_state();
@@ -60,12 +60,13 @@ namespace ledcontrol {
         int load_state_from_flash();
         int save_state_to_flash();
 
-    private:
+        void _enc_switch_cb(bool val);
+        void _enc_rotate_cb(signed int counter);
+
+      private:
         PicoLed::PicoLedController led_strip;
-        pimoroni::Button button_a, button_b;
-        pimoroni::I2C i2c;
-        pimoroni::BreakoutEncoder enc;
-        const char flash_save_magic[8] = "LEDCTRL";
+        pimoroni::Button button_b;
+        Encoder *enc = nullptr;
 
         state_t state;
         enum MENU_MODE menu_mode;
@@ -73,8 +74,8 @@ namespace ledcontrol {
         uint32_t encoder_last_blink;
         bool encoder_blink_state;
         uint32_t start_time{}, stop_time;
-        bool encoder_detected{};
 
+        const char flash_save_magic[8] = "LEDCTRL";
         typedef struct {
             char magic[8];
             size_t state_size;

@@ -75,6 +75,12 @@ void LEDControl::set_cycle(bool v) {
 #endif
 }
 
+void LEDControl::encoder_blink_off() {
+  if (!encoder_blink_state) return;
+  encoder_blink_state = false;
+  set_encoder_state();
+}
+
 uint32_t LEDControl::encoder_colour_by_mode(LEDControl::ENCODER_MODE mode) {
   uint32_t col;
   switch(mode) {
@@ -83,10 +89,10 @@ uint32_t LEDControl::encoder_colour_by_mode(LEDControl::ENCODER_MODE mode) {
       col = 0;
       break;
     case ENCODER_MODE::COLOUR:
-      col = 0xFFFF00; // yellow
+      col = 0x00FF00; // green
       break;
     case ENCODER_MODE::ANGLE:
-      col = 0x0000FF; // blue
+      col = 0xFFFF00; // yellow
       break;
     case ENCODER_MODE::BRIGHTNESS:
       col = 0xFFFFFF; // white
@@ -114,20 +120,19 @@ uint32_t LEDControl::encoder_colour_by_mode(LEDControl::ENCODER_MODE mode) {
   return col;
 }
 
-void LEDControl::encoder_loop(LEDControl::ENCODER_MODE mode) {
+void LEDControl::encoder_loop() {
   const uint32_t encoder_blink_interval = 500;
   uint32_t ts = millis();
   if (encoder_last_blink == 0 || (encoder_last_blink + encoder_blink_interval)<ts) {
     encoder_last_blink = ts;
     encoder_blink_state = !encoder_blink_state;
-    encoder_colour_by_mode(mode);
+    encoder_colour_by_mode(state.mode);
   }
 }
 
-LEDControl::ENCODER_MODE LEDControl::encoder_state_by_mode(ENCODER_MODE mode) {
-  enc->set_brightness(mode == ENCODER_MODE::BRIGHTNESS ? state.brightness : ENC_DEFAULT_BRIGHTNESS);
-  encoder_colour_by_mode(mode);
-  return mode;
+void LEDControl::set_encoder_state() {
+  enc->set_brightness(state.mode == ENCODER_MODE::BRIGHTNESS ? state.brightness : ENC_DEFAULT_BRIGHTNESS);
+  encoder_colour_by_mode(state.mode);
 }
 
 void LEDControl::init(Encoder *e) {
@@ -160,7 +165,7 @@ void LEDControl::enable_state(state_t p_state) {
   state = p_state;
   led_strip.setBrightness((uint8_t)(state.brightness*BRIGHTNESS_SCALE));
   led_strip.show();
-  encoder_state_by_mode(state.mode);
+  set_encoder_state();
 }
 
 LEDControl::state_t LEDControl::get_state() {
@@ -230,7 +235,7 @@ uint32_t LEDControl::loop() {
       case MENU_MODE::MENU_SELECT:
         state.mode = (ENCODER_MODE)limiting_wrap(state.mode + (count < 0.0f ? -1 : 1), 0, ENCODER_MODE::MODE_COUNT);
         printf("[mode] new mode: %d\n", state.mode);
-        encoder_state_by_mode(state.mode);
+        set_encoder_state();
         break;
       case MENU_MODE::MENU_ADJUST:
         if (state.mode == ENCODER_MODE::OFF) break;
@@ -316,11 +321,11 @@ uint32_t LEDControl::loop() {
   if (a_pressed) {
     if (state.mode == ENCODER_MODE::OFF) { // If we're off, switch to first mode
       state.mode = ENCODER_MODE::COLOUR;
-      encoder_state_by_mode(state.mode);
+      set_encoder_state();
     } else {
       menu_mode = (MENU_MODE)(((int) menu_mode + 1) % (int) MENU_MODE::MENU_COUNT);
       printf("[menu] new menu selection: %d\n", menu_mode);
-      encoder_state_by_mode(state.mode);
+      set_encoder_state();
       if (!cycle) {
         set_cycle(true);
         t = pimoroni::millis() - start_time;
@@ -330,7 +335,8 @@ uint32_t LEDControl::loop() {
   }
 
   if (cycle) cycle_loop(state.hue, (float) (t - get_paused_time()) * state.speed, state.angle);
-  if (menu_mode == MENU_MODE::MENU_ADJUST) encoder_loop(state.mode);
+  if (menu_mode == MENU_MODE::MENU_ADJUST) encoder_loop();
+  else encoder_blink_off();
 
   // Sleep time controls the rate at which the LED buffer is updated
   // but *not* the actual framerate at which the buffer is sent to the LEDs

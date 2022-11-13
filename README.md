@@ -49,8 +49,8 @@ Encoder LED colours indicate the current mode. If the LED is blinking, moving th
 The modes are:
 
 - Off: Encoder disabled.
-- Yellow*: Encoder is primed to change the start colour on the colour wheel.
-- Blue*: Encoder is primed to change the end colour on the colour wheel. (wip)
+- Green*: Encoder is primed to change the start colour on the colour wheel.
+- Yellow*: Encoder is primed to change the end colour on the colour wheel.
 - White/grey: You're changing the brightness.
 - Red: You're now changing the cycling speed.
 - Purple*: You're selecting an effect.

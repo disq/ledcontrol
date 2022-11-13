@@ -87,8 +87,9 @@ namespace ledcontrol {
         uint16_t get_paused_time();
         void set_cycle(bool v);
         uint32_t encoder_colour_by_mode(ENCODER_MODE mode);
-        void encoder_loop(ENCODER_MODE mode);
-        ENCODER_MODE encoder_state_by_mode(ENCODER_MODE mode);
+        void encoder_loop();
+        void set_encoder_state();
+        void encoder_blink_off();
     };
 }
 

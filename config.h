@@ -36,7 +36,7 @@ const LEDControl::state_t DEFAULT_STATE = {
 const float_t MIN_BRIGHTNESS = 0.02f; // below this there's no meaningful output
 const float_t MAX_BRIGHTNESS = 1.0f;
 const float_t MIN_SPEED = 0.01f;
-const float_t MAX_SPEED = 0.5f; // let's be safe and not trigger anyone
+const float_t MAX_SPEED = 0.18f; // let's be safe and not trigger anyone
 
 // How many times the LEDs will be updated per second
 const uint UPDATES = 60;
@@ -48,12 +48,12 @@ const float_t ENC_DEFAULT_BRIGHTNESS = 1.0f;
 const uint LED_DATA_PIN = 28;
 const uint BUTTON_B_PIN = 27;
 
-#define ROT_LEDG 16 // green LED (white cable)
-#define ROT_LEDB 17 // blue LED (brown cable)
-#define ROT_LEDR 18 // red LED (grey cable)
-#define ROT_A 19 // rotary A (green cable?)
-#define ROT_B 20 // rotary B (blue cable?)
-#define ROT_SW 21 // rotary pushbutton (black cable)
+#define ROT_A 16 // rotary A (leftmost pin in rotary)
+#define ROT_B 17 // rotary B (rightmost pin in rotary)
+#define ROT_LEDR 18 // red LED
+#define ROT_LEDG 19 // green LED
+#define ROT_SW 20 // rotary pushbutton
+#define ROT_LEDB 21 // blue LED
 
 #ifndef RASPBERRYPI_PICO_W
 #define LED_PAUSED_PIN PICO_DEFAULT_LED_PIN

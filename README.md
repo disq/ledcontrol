@@ -29,10 +29,10 @@ Only a single (right) side of the Pico is used for connections to allow for crea
 
 - WS2812/SK6812 LED strip: Data on GP28. Power with 5V and GND.
 - Rotary Encoder with LED and button: 8 connections, believe or not!
-  - LED connections: Green to GP16, Blue to GP17, Red to GP18
+  - LED connections: Red to GP18, Green to GP19, Blue to GP21
   - LED common anode to 3.3v (Pin 36)
-  - Rotary encoder: A to GP19, B to GP20, C to GND (Pin 23)
-  - SW to GP21
+  - Rotary encoder: A to GP16, B to GP17, C to GND (Pin 23)
+  - SW to GP20
 - Optional: Button "B" to GP27. Connect the other end of the button to any GND pin.
 
 Pinout diagram is [here](./doc/pinout.png) or [from the back](./doc/pinout-back.png) (courtesy of [pinout.xyz](https://pico.pinout.xyz/))

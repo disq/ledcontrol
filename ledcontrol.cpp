@@ -89,32 +89,28 @@ uint32_t LEDControl::encoder_colour_by_mode(LEDControl::ENCODER_MODE mode) {
       col = 0;
       break;
     case ENCODER_MODE::COLOUR:
-      col = 0x00FF00; // green
+      col = 0x808000; // dim yellow
       break;
     case ENCODER_MODE::ANGLE:
-      col = 0xFFFF00; // yellow
+      col = 0x804000; // dim orange
       break;
     case ENCODER_MODE::BRIGHTNESS:
-      col = 0xFFFFFF; // white
+      col = 0x606060; // dim white
       break;
     case ENCODER_MODE::SPEED:
-      col = 0xFF0000; // red
+      col = 0x400000; // dim red
       break;
     case ENCODER_MODE::EFFECT:
-      col = 0xFF00FF; // purple
+      col = 0x400040; // dim purple
       break;
   }
   uint8_t col_r = (col >> 16) & 0xFF;
   uint8_t col_g = (col >> 8) & 0xFF;
   uint8_t col_b = col & 0xFF;
   if (encoder_blink_state) {
-    // TODO reenable this after PWM
-//    col_r = col_r >> 1;
-//    col_g = col_g >> 1;
-//    col_b = col_b >> 1;
-    col_r = 0;
-    col_g = 0;
-    col_b = 0;
+    col_r = col_r >> 1;
+    col_g = col_g >> 1;
+    col_b = col_b >> 1;
   }
   enc->set_leds(col_r, col_g, col_b);
   return col;

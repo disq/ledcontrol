@@ -6,10 +6,11 @@
 
 class Encoder {
   private:
-    int pin_led_r, pin_led_g, pin_led_b, pin_led_common;
     int pin_enc_a, pin_enc_b, pin_enc_sw; // connect encoder pin C to ground
     int led_pins[3], in_pins[3];
+    uint8_t led_vals[3];
     bool leds_active_low;
+    float led_brightness;
 
     int rotary_counter = 0;
     signed int read_rotary();

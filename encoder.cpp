@@ -3,26 +3,41 @@
 #include <cstdio>
 #include <common/pimoroni_common.hpp>
 #include "hardware/gpio.h"
+#include "hardware/pwm.h"
+
+uint32_t pwm_set_freq_duty(uint slice_num, uint chan, uint32_t f, int d) {
+  // from this article: https://www.i-programmer.info/programming/hardware/14849-the-pico-in-c-basic-pwm.html
+  uint32_t clock = 125000000;
+  uint32_t divider16 = clock / f / 4096 + (clock % (f * 4096) != 0);
+  if (divider16 / 16 == 0) divider16 = 16;
+  uint32_t wrap = clock * 16 / divider16 / f - 1;
+  pwm_set_clkdiv_int_frac(slice_num, divider16/16, divider16 & 0xF);
+  pwm_set_wrap(slice_num, wrap);
+  pwm_set_chan_level(slice_num, chan, wrap * d / 100);
+  return wrap;
+}
 
 Encoder::Encoder() {
 }
 
 void Encoder::init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b,
                    int p_pin_enc_a, int p_pin_enc_b, int p_pin_enc_sw, bool p_leds_active_low) {
-  pin_led_r = p_pin_led_r;
-  pin_led_g = p_pin_led_g;
-  pin_led_b = p_pin_led_b;
   pin_enc_a = p_pin_enc_a;
   pin_enc_b = p_pin_enc_b;
   pin_enc_sw = p_pin_enc_sw;
   leds_active_low = p_leds_active_low;
 
-  led_pins[0] = pin_led_r;
-  led_pins[1] = pin_led_g;
-  led_pins[2] = pin_led_b;
+  led_pins[0] = p_pin_led_r;
+  led_pins[1] = p_pin_led_g;
+  led_pins[2] = p_pin_led_b;
   in_pins[0] = pin_enc_a;
   in_pins[1] = pin_enc_b;
   in_pins[2] = pin_enc_sw;
+
+  led_brightness = 1.0f;
+  led_vals[0] = 0;
+  led_vals[1] = 0;
+  led_vals[2] = 0;
 
   for (auto pin : led_pins) {
       gpio_init(pin);
@@ -35,6 +50,12 @@ void Encoder::init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b,
         gpio_pull_down(pin);
         gpio_put(pin, false);
       }
+
+      gpio_set_function(pin, GPIO_FUNC_PWM);
+      uint slice_num = pwm_gpio_to_slice_num(pin);
+      uint chan = pwm_gpio_to_channel(pin);
+      pwm_set_freq_duty(slice_num,chan, 50, 0);
+      pwm_set_enabled(slice_num, true);
   }
 
    for (auto pin : in_pins) {
@@ -70,16 +91,24 @@ signed int Encoder::read_rotary() {
 }
 
 void Encoder::set_leds(uint8_t r, uint8_t g, uint8_t b) {
-  bool r_on = r >= 128;
-  bool g_on = g >= 128;
-  bool b_on = b >= 128;
-  gpio_put(pin_led_r, !r_on ? leds_active_low : !leds_active_low);
-  gpio_put(pin_led_g, !g_on ? leds_active_low : !leds_active_low);
-  gpio_put(pin_led_b, !b_on ? leds_active_low : !leds_active_low);
+  led_vals[0] = r;
+  led_vals[1] = g;
+  led_vals[2] = b;
+
+  for(auto i = 0; i < 3; i++) {
+    uint slice_num = pwm_gpio_to_slice_num(led_pins[i]);
+    uint chan = pwm_gpio_to_channel(led_pins[i]);
+    float duty_pct = ((float)led_vals[i])/255.0f*100.0f*led_brightness;
+    if (leds_active_low) duty_pct = 100.0f - duty_pct;
+    pwm_set_freq_duty(slice_num,chan, 60, int(duty_pct));
+  }
 }
 
 void Encoder::set_brightness(float brightness) {
-  // TODO with PWM
+  if (brightness < 0.0f) brightness = 0.0f;
+  else if (brightness > 1.0f) brightness = 1.0f;
+  led_brightness = brightness;
+  set_leds(led_vals[0], led_vals[1], led_vals[2]);
 }
 
 void Encoder::_gpio_callback(uint gpio, uint32_t events) {

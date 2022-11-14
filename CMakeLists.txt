@@ -38,6 +38,8 @@ target_link_libraries(${NAME}
         PicoLed
         hardware_flash
         hardware_sync
+        hardware_gpio
+        hardware_pwm
         pico_bootsel_via_double_reset
 )
 

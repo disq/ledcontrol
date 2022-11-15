@@ -64,16 +64,16 @@ namespace ledcontrol {
         void _enc_rotate_cb(signed int counter);
 
       private:
+        state_t state;
+        uint32_t encoder_last_blink;
+        bool encoder_blink_state;
+        uint32_t start_time, stop_time;
         PicoLed::PicoLedController led_strip;
         pimoroni::Button button_b;
         Encoder *enc = nullptr;
 
-        state_t state;
         enum MENU_MODE menu_mode;
         bool cycle{};
-        uint32_t encoder_last_blink;
-        bool encoder_blink_state;
-        uint32_t start_time{}, stop_time;
 
         const char flash_save_magic[8] = "LEDCTRL";
         typedef struct {

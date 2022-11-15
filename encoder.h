@@ -6,8 +6,8 @@
 
 class Encoder {
   private:
-    int pin_enc_a, pin_enc_b, pin_enc_sw; // connect encoder pin C to ground
-    int led_pins[3], in_pins[3];
+    uint pin_enc_a, pin_enc_b, pin_enc_sw; // connect encoder pin C to ground
+    uint led_pins[3], in_pins[3];
     uint8_t led_vals[3];
     bool leds_active_low;
     float led_brightness;
@@ -21,7 +21,7 @@ class Encoder {
 
 public:
     Encoder();
-    void init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b, int p_pin_enc_a, int p_pin_enc_b, int p_pin_enc_sw, bool p_leds_active_low = true);
+    void init(uint p_pin_led_r, uint p_pin_led_g, uint p_pin_led_b, uint p_pin_enc_a, uint p_pin_enc_b, uint p_pin_enc_sw, bool p_leds_active_low = true);
     void set_leds(uint8_t r, uint8_t g, uint8_t b);
     void set_brightness(float brightness);
 

@@ -11,11 +11,21 @@ project(${NAME} C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
+if (PICO_SDK_VERSION_STRING VERSION_LESS "1.4.0")
+    message(FATAL_ERROR "Raspberry Pi Pico SDK version 1.4.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
+endif()
+
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 set(PICO_CXX_ENABLE_RTTI 1)
 
 # Initialize the SDK
 pico_sdk_init()
+
+add_compile_options(-Wall
+        -Wno-format          # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
+        -Wno-unused-function
+        -Wno-maybe-uninitialized
+        )
 
 # Add your source files
 add_executable(${NAME}
@@ -24,13 +34,9 @@ add_executable(${NAME}
 
 # Include required libraries
 # This assumes `pimoroni-pico` is stored alongside your project
-include(../pimoroni-pico/common/pimoroni_i2c)
-include(../pimoroni-pico/drivers/ioexpander/ioexpander)
-include(../pimoroni-pico/libraries/breakout_encoder/breakout_encoder)
 include(../pimoroni-pico/drivers/button/button)
 include(PicoLED/PicoLed.cmake)
 
-# Don't forget to link the libraries you need!
 target_link_libraries(${NAME}
         pico_stdlib
         button
@@ -43,7 +49,7 @@ target_link_libraries(${NAME}
         pico_bootsel_via_double_reset
 )
 
-if (PICO_CYW43_SUPPORTED)
+if (PICO_CYW43_SUPPORTED) # set by BOARD=pico-w
     if (TARGET pico_cyw43_arch)
         target_link_libraries(${NAME}
                 pico_cyw43_arch_none # we need Wifi to access the GPIO, but we don't need anything else
@@ -51,16 +57,18 @@ if (PICO_CYW43_SUPPORTED)
     endif()
 endif()
 
+pico_enable_stdio_usb(${NAME} 1)
+pico_enable_stdio_uart(${NAME} 0)
+
 # create map/bin/hex file etc.
 pico_add_extra_outputs(${NAME})
-pico_enable_stdio_usb(${NAME} ENABLED)
 
 # Set up files for the release packages
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.uf2
-    ${CMAKE_CURRENT_LIST_DIR}/README.md
-    DESTINATION .
-)
+        ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.uf2
+        ${CMAKE_CURRENT_LIST_DIR}/README.md
+        DESTINATION .
+        )
 
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY OFF)
 set(CPACK_GENERATOR "ZIP" "TGZ")

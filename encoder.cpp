@@ -20,8 +20,8 @@ uint32_t pwm_set_freq_duty(uint slice_num, uint chan, uint32_t f, int d) {
 Encoder::Encoder() {
 }
 
-void Encoder::init(int p_pin_led_r, int p_pin_led_g, int p_pin_led_b,
-                   int p_pin_enc_a, int p_pin_enc_b, int p_pin_enc_sw, bool p_leds_active_low) {
+void Encoder::init(uint p_pin_led_r, uint p_pin_led_g, uint p_pin_led_b,
+                   uint p_pin_enc_a, uint p_pin_enc_b, uint p_pin_enc_sw, bool p_leds_active_low) {
   pin_enc_a = p_pin_enc_a;
   pin_enc_b = p_pin_enc_b;
   pin_enc_sw = p_pin_enc_sw;

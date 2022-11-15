@@ -20,6 +20,7 @@ LEDControl::LEDControl():
     state(DEFAULT_STATE),
     encoder_last_blink(0),
     encoder_blink_state(false),
+    start_time(0),
     stop_time(0),
     led_strip(PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, PicoLed::FORMAT_WRGB)),
     button_b(pimoroni::Button(BUTTON_B_PIN, pimoroni::Polarity::ACTIVE_LOW, 0))

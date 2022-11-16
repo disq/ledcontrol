@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include "config_iot.h"
+#include "pico/unique_id.h"
 
 #ifdef MQTT_TLS
 #ifdef MQTT_TLS_CERT
@@ -182,13 +183,24 @@ int IOT::mqtt_run_test(const char *mqtt_host, uint16_t mqtt_port) {
   return 0;
 }
 
+const char* IOT::get_client_id() {
+  static char client_id[128] = {0};
+  if (client_id[0] != 0) {
+    return client_id;
+  }
+
+  strncpy(client_id, MQTT_CLIENT_ID, sizeof(client_id));
+  pico_get_unique_board_id_string(&client_id[strlen(client_id)], sizeof(client_id) - strlen(client_id));
+  return client_id;
+}
+
 int IOT::mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *state) {
   struct mqtt_connect_client_info_t ci;
   err_t err;
 
   memset(&ci, 0, sizeof(ci));
 
-  ci.client_id = MQTT_CLIENT_ID;
+  ci.client_id = get_client_id();
 #ifdef MQTT_CLIENT_USER
   ci.client_user = MQTT_CLIENT_USER;
 #else
@@ -263,7 +275,7 @@ err_t IOT::mqtt_test_publish(mqtt_wrapper_t *state)
 #define TLS_STR ""
 #endif
 
-  sprintf(buffer, "hello from picow %s %d / %d %s", MQTT_CLIENT_ID, state->received, state->counter, TLS_STR);
+  sprintf(buffer, "hello from picow %s %d / %d %s", get_client_id(), state->received, state->counter, TLS_STR);
 
   err_t err;
   u8_t qos = 2; /* 0 1 or 2, see MQTT specification */

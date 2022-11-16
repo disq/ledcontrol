@@ -54,8 +54,15 @@
 "-----END CERTIFICATE-----";
 */
 
-#define MQTT_CLIENT_ID "PicoW Ledcontrol"
+// MQTT client id. Board id is appended to this string
+#define MQTT_CLIENT_ID "PicoW Ledcontrol "
+
+// MQTT user name and password
 //#define MQTT_CLIENT_USER ""
 //#define MQTT_CLIENT_PASS ""
+
+#ifndef CYW43_HOST_NAME
+#define CYW43_HOST_NAME "picow-ledcontrol"
+#endif
 
 #endif

@@ -27,10 +27,15 @@ add_compile_options(-Wall
         -Wno-maybe-uninitialized
         )
 
-# Add your source files
-add_executable(${NAME}
-    main.cpp ledcontrol.cpp ledcontrol.h util.h config.h encoder.cpp encoder.h
-)
+if ((PICO_CYW43_SUPPORTED) AND (TARGET pico_cyw43_arch))
+    add_executable(${NAME}
+            main.cpp ledcontrol.cpp ledcontrol.h util.h config.h encoder.cpp encoder.h iot.cpp iot.h config_iot.h mbedtls_util.c
+        )
+else()
+    add_executable(${NAME}
+            main.cpp ledcontrol.cpp ledcontrol.h util.h config.h encoder.cpp encoder.h
+        )
+endif()
 
 # Include required libraries
 # This assumes `pimoroni-pico` is stored alongside your project
@@ -49,12 +54,33 @@ target_link_libraries(${NAME}
         pico_bootsel_via_double_reset
 )
 
-if (PICO_CYW43_SUPPORTED) # set by BOARD=pico-w
-    if (TARGET pico_cyw43_arch)
-        target_link_libraries(${NAME}
-                pico_cyw43_arch_none # we need Wifi to access the GPIO, but we don't need anything else
-        )
+if ((PICO_CYW43_SUPPORTED) AND (TARGET pico_cyw43_arch)) # set by BOARD=pico-w
+    set(WIFI_SSID "${WIFI_SSID}" CACHE INTERNAL "WiFi SSID")
+    set(WIFI_PASSWORD "${WIFI_PASSWORD}" CACHE INTERNAL "WiFi password")
+
+    if ("${WIFI_SSID}" STREQUAL "")
+        message(FATAL_ERROR "Skipping build as WIFI_SSID is not defined")
+    elseif ("${WIFI_PASSWORD}" STREQUAL "")
+        message(FATAL_ERROR "Skipping build as WIFI_PASSWORD is not defined")
     endif()
+
+    target_compile_definitions(${NAME} PRIVATE
+            WIFI_SSID=\"${WIFI_SSID}\"
+            WIFI_PASSWORD=\"${WIFI_PASSWORD}\"
+        )
+
+    target_include_directories(${NAME} PRIVATE
+            ${CMAKE_CURRENT_LIST_DIR}
+            ${CMAKE_CURRENT_LIST_DIR}/.. # for our common lwipopts
+        )
+
+    target_link_libraries(${NAME}
+#            pico_cyw43_arch_lwip_poll
+            pico_cyw43_arch_lwip_threadsafe_background
+            pico_lwip_mbedtls
+            pico_mbedtls
+            pico_lwip_mqtt
+        )
 endif()
 
 pico_enable_stdio_usb(${NAME} 1)

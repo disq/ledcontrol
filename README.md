@@ -82,6 +82,7 @@ And the Pico SDK:
 ```
 git clone https://github.com/raspberrypi/pico-sdk
 cd pico-sdk
+git checkout develop # Switch to develop branch
 git submodule update --init
 export PICO_SDK_PATH=`pwd`
 cd ../

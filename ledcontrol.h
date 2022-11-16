@@ -60,6 +60,8 @@ namespace ledcontrol {
         int load_state_from_flash();
         int save_state_to_flash();
 
+        void set_on_state_change_cb(void (*cb)(state_t new_state)) { _on_state_change_cb = cb; }
+
         void _enc_switch_cb(bool val);
         void _enc_rotate_cb(signed int counter);
 
@@ -81,6 +83,8 @@ namespace ledcontrol {
             size_t state_size;
             state_t state;
         } flash_state_t;
+
+        void (*_on_state_change_cb)(state_t new_state);
 
         // private methods
         void cycle_loop(float hue, float t, float angle);

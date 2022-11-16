@@ -18,11 +18,14 @@ const char *key = MQTT_TLS_KEY;
 #endif
 
 IOT::IOT():
+global_state(NULL),
+_connect_cb(NULL),
 _loop_cb(NULL) {
 }
 
-int IOT::init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)()) {
+int IOT::init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)(), void (*connect_cb)()) {
   _loop_cb = loop_cb;
+  _connect_cb = connect_cb;
 
   cyw43_arch_enable_sta_mode();
 
@@ -34,7 +37,26 @@ int IOT::init(const char *ssid, const char *password, uint32_t authmode, void (*
 
   printf("[wifi] connected\n");
 
-  mqtt_run_test(MQTT_SERVER_HOST, MQTT_SERVER_PORT);
+//  mqtt_run_test(MQTT_SERVER_HOST, MQTT_SERVER_PORT);
+  return 0;
+}
+
+int IOT::connect() {
+  mqtt_wrapper_t *state = new mqtt_wrapper_t();
+  state->mqtt_client = NULL;
+  state->reconnect = 0;
+  state->received = 0;
+  state->receiving = 0;
+  state->counter = 0;
+  int res = mqtt_fresh_state(MQTT_SERVER_HOST, MQTT_SERVER_PORT, state);
+  if (res != 0) {
+    printf("[mqtt] failed to init: %d\n", res);
+    return res;
+  }
+  global_state = state;
+
+  // not supporting polling mode here for now
+
   return 0;
 }
 
@@ -194,6 +216,21 @@ const char* IOT::get_client_id() {
   return client_id;
 }
 
+const char* IOT::get_topic_prefix() {
+#ifndef MQTT_ADD_BOARD_ID_TO_TOPIC
+  return MQTT_TOPIC_PREFIX;
+#endif
+
+  static char prefix[128] = {0};
+  if (prefix[0] != 0) {
+    return prefix;
+  }
+
+  strncpy(prefix, MQTT_TOPIC_PREFIX, sizeof(prefix));
+  pico_get_unique_board_id_string(&prefix[strlen(prefix)], sizeof(prefix) - strlen(prefix));
+  return prefix;
+}
+
 int IOT::mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *state) {
   struct mqtt_connect_client_info_t ci;
   err_t err;
@@ -261,7 +298,7 @@ int IOT::mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *s
   return 0;
 }
 
-err_t IOT::mqtt_test_publish(mqtt_wrapper_t *state)
+int IOT::mqtt_test_publish(mqtt_wrapper_t *state)
 {
   char buffer[128];
 
@@ -277,13 +314,30 @@ err_t IOT::mqtt_test_publish(mqtt_wrapper_t *state)
 
   sprintf(buffer, "hello from picow %s %d / %d %s", get_client_id(), state->received, state->counter, TLS_STR);
 
+  return topic_publish("testing", buffer);
+}
+
+int IOT::topic_publish(const char *topicsuffix, const char *buffer)
+{
+  char topic[256] = {0};
+  strncpy(topic, get_topic_prefix(), sizeof(topic));
+  strncat(topic, "/", sizeof(topic) - strlen(topic));
+  strncat(topic, topicsuffix, sizeof(topic) - strlen(topic));
+
   err_t err;
   u8_t qos = 2; /* 0 1 or 2, see MQTT specification */
-  u8_t retain = 0;
+  u8_t retain = 1;
   cyw43_arch_lwip_begin();
-  err = mqtt_publish(state->mqtt_client, "pico_w/test", buffer, strlen(buffer), qos, retain, _iot_mqtt_pub_request_cb, &state);
+  err = mqtt_publish(global_state->mqtt_client, topic, buffer, strlen(buffer), qos, retain, _iot_mqtt_pub_request_cb, global_state);
   cyw43_arch_lwip_end();
-  return err;
+
+  if (err == ERR_OK) {
+    printf("[mqtt] mqtt_publish to %s successful.\n", topic);
+    return 0;
+  }
+
+  printf("[mqtt] mqtt_publish to %s failed: %d\n", topic, err);
+  return -1;
 }
 
 void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status) {
@@ -293,6 +347,45 @@ void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_
     return;
   }
   printf("[mqtt] connected (callback)\n");
+
+  mqtt_set_inpub_callback(client, _iot_mqtt_publish_data_cb, _iot_mqtt_incoming_data_cb, arg);
+
+  // subscribe to various topics
+  const char* suffixes[3] = {"/light/switch", "/brightness/set", "/rgb/set"};
+  for(unsigned int i = 0; i < sizeof(suffixes); i++) {
+    char topic[256];
+    sprintf(topic, "%s%s", get_topic_prefix(), suffixes[i]);
+    printf("[mqtt] subscribing to %s\n", topic);
+    err_t err = mqtt_subscribe(client, topic, 2, _iot_mqtt_sub_request_cb, topic);
+    if (err != ERR_OK) {
+      printf("[mqtt] mqtt_subscribe %s returned error: %d\n", topic, err);
+    }
+    break;
+  }
+
+  printf("should call connect_cb\n");
+  if (_connect_cb) {
+    printf("should call connect_cb here\n");
+    _connect_cb();
+    printf("called\n");
+  }
+//  if (_connect_cb) _connect_cb();
+}
+
+void IOT::publish_switch_state(bool on) {
+  topic_publish("light/status", on ? light_on : light_off);
+}
+
+void IOT::publish_brightness(float brightness) {
+  char buffer[128];
+  snprintf(buffer, sizeof(buffer), "%d", int(brightness*mqtt_brightness_scale));
+  topic_publish("brightness/status", buffer);
+}
+
+void IOT::publish_colour(float r, float g, float b) {
+  char buffer[128];
+  snprintf(buffer, sizeof(buffer), "%d,%d,%d", int(r*mqtt_rgb_scale), int(g*mqtt_rgb_scale), int(b*mqtt_rgb_scale));
+  topic_publish("rgb/status", buffer);
 }
 
 void IOT::_mqtt_pub_request_cb(void *arg, err_t err) {
@@ -304,6 +397,25 @@ void IOT::_mqtt_pub_request_cb(void *arg, err_t err) {
   }
   state->receiving=0;
   state->received++;
+}
+
+void IOT::_mqtt_sub_request_cb(void *arg, err_t err) {
+  auto topic = (const char*)arg;
+  if (err == ERR_OK) {
+    printf("[mqtt] (cb) subscribe to %s successful\n", topic);
+  } else {
+    printf("[mqtt] (cb) subscribe to %s failed: %d\n", topic, err);
+  }
+}
+
+void IOT::_mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
+//  mqtt_wrapper_t *state = (mqtt_wrapper_t *) arg;
+  printf("[mqtt] (cb) incoming data: %s\n", (const char*)data);
+}
+
+void IOT::_mqtt_publish_data_cb(void *arg, const char *topic, u32_t tot_len) {
+//  mqtt_wrapper_t *state = (mqtt_wrapper_t *) arg;
+  printf("[mqtt] (cb) publish data on topic: %s (length: %d)\n", topic, tot_len);
 }
 
 IOT iot;
@@ -319,4 +431,16 @@ static void _iot_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_conne
 
 static void _iot_mqtt_pub_request_cb(void *arg, err_t err) {
   iot._mqtt_pub_request_cb(arg, err);
+}
+
+static void _iot_mqtt_sub_request_cb(void *arg, err_t err) {
+  iot._mqtt_sub_request_cb(arg, err);
+}
+
+static void _iot_mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
+  iot._mqtt_incoming_data_cb(arg, data, len, flags);
+}
+
+static void _iot_mqtt_publish_data_cb(void *arg, const char *topic, u32_t tot_len) {
+  iot._mqtt_publish_data_cb(arg, topic, tot_len);
 }

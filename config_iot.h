@@ -2,7 +2,7 @@
 #define CONFIG_IOT_H
 
 // Set this if you want to connect to MQTT securely
-#define MQTT_TLS
+//#define MQTT_TLS
 
 // MQTT server host name or ip address
 #define MQTT_SERVER_HOST "test.mosquitto.org"
@@ -64,5 +64,10 @@
 #ifndef CYW43_HOST_NAME
 #define CYW43_HOST_NAME "picow-ledcontrol"
 #endif
+
+// Topic prefix, without the trailing slash
+#define MQTT_TOPIC_PREFIX "picow/ledcontrol"
+// Set this to add the board id to the topic prefix, so that a single firmware can be used for multiple boards
+//#define MQTT_ADD_BOARD_ID_TO_TOPIC
 
 #endif

@@ -163,6 +163,7 @@ void LEDControl::enable_state(state_t p_state) {
   led_strip.setBrightness((uint8_t)(state.brightness*BRIGHTNESS_SCALE));
   led_strip.show();
   set_encoder_state();
+  if (_on_state_change_cb) _on_state_change_cb(state);
 }
 
 LEDControl::state_t LEDControl::get_state() {
@@ -241,7 +242,7 @@ uint32_t LEDControl::loop() {
 
         switch (state.mode) {
           default:
-          case ENCODER_MODE::OFF:
+          case ENCODER_MODE::OFF: // not possible due to if above
             break;
 
           case ENCODER_MODE::COLOUR:
@@ -283,6 +284,8 @@ uint32_t LEDControl::loop() {
             cycle_loop(state.hue, (float) (t - get_paused_time()) * state.speed, state.angle);
             break;
         }
+
+        if (_on_state_change_cb) _on_state_change_cb(state);
     }
   }
 

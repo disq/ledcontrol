@@ -134,6 +134,24 @@ cmake ..
 - Then run:
 `cmake -DPICO_BOARD=pico_w -DWIFI_SSID=your_ssid -DWIFI_PASSWORD=your_password ..`
 
+#### Home Assistant Configuration
+
+- Add the following to your `configuration.yaml`:
+
+```yaml
+light:
+  platform: mqtt
+  name: 'Ledcontrol light'
+  state_topic: 'picow/ledcontrol/light/status'
+  command_topic: 'picow/ledcontrol/light/switch'
+  brightness_state_topic: 'picow/ledcontrol/brightness/status'
+  brightness_command_topic: 'picow/ledcontrol/brightness/set'
+  rgb_state_topic: 'picow/ledcontrol/rgb/status'
+  rgb_command_topic: 'picow/ledcontrol/rgb/set'
+  brightness_scale: 100
+  optimistic: false
+```
+
 ## Build
 
 ```

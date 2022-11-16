@@ -80,6 +80,7 @@ if ((PICO_CYW43_SUPPORTED) AND (TARGET pico_cyw43_arch)) # set by BOARD=pico-w
             pico_lwip_mbedtls
             pico_mbedtls
             pico_lwip_mqtt
+            pico_unique_id
         )
 endif()
 

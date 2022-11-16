@@ -34,6 +34,7 @@ class IOT {
   public:
     IOT();
     int init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)());
+    const char* get_client_id();
     int mqtt_run_test(const char *mqtt_host, uint16_t mqtt_port);
 
     // callbacks

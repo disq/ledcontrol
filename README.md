@@ -115,7 +115,9 @@ git submodule update --init
 
 ## Prepare project environment
 
-In `ledcontrol` directory:
+See `config.h` to configure number of LEDs and defaults, or to customize the pins used.
+
+Then in `ledcontrol` directory:
 
 ```
 mkdir build
@@ -123,7 +125,14 @@ cd build
 cmake ..
 ```
 
-for Pico W, use `cmake -DPICO_BOARD=pico_w ..` instead.
+### Compiling for Pico W
+
+- For Pico W you need to define `PICO_BOARD`, `WIFI_SSID` and `WIFI_PASSWORD` during cmake (see below).
+
+- Edit `config_iot.h` to change MQTT server and options.
+
+- Then run:
+`cmake -DPICO_BOARD=pico_w -DWIFI_SSID=your_ssid -DWIFI_PASSWORD=your_password ..`
 
 ## Build
 

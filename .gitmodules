@@ -1,3 +1,6 @@
 [submodule "PicoLED"]
 	path = PicoLED
 	url = https://github.com/ForsakenNGS/PicoLED
+[submodule "cJSON"]
+	path = cJSON
+	url = https://github.com/DaveGamble/cJSON.git

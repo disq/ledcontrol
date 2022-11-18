@@ -1,6 +1,8 @@
 #ifndef CONFIG_IOT_H
 #define CONFIG_IOT_H
 
+#include "pico/cyw43_arch.h"
+
 // Set this if you want to connect to MQTT securely
 //#define MQTT_TLS
 
@@ -54,10 +56,10 @@
 "-----END CERTIFICATE-----";
 */
 
-// MQTT client id. Board id is appended to this string
-#define MQTT_CLIENT_ID "PicoW Ledcontrol "
+// MQTT client id. Board id is appended to this string. Due to the 23 byte soft limit, recommended to keep it at (or under) 7 chars
+#define MQTT_CLIENT_ID "PicoW_"
 
-// MQTT user name and password
+// MQTT username and password. If empty, don't #define and leave commented out
 //#define MQTT_CLIENT_USER ""
 //#define MQTT_CLIENT_PASS ""
 
@@ -69,5 +71,7 @@
 #define MQTT_TOPIC_PREFIX "picow/ledcontrol"
 // Set this to add the board id to the topic prefix, so that a single firmware can be used for multiple boards
 //#define MQTT_ADD_BOARD_ID_TO_TOPIC
+
+#define WIFI_COUNTRY_CODE CYW43_COUNTRY_UK
 
 #endif

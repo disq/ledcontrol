@@ -2,7 +2,6 @@
 #include <cstdio>
 #include <string.h>
 #include <time.h>
-#include "config_iot.h"
 #include "pico/unique_id.h"
 
 #ifdef MQTT_TLS
@@ -126,15 +125,9 @@ int IOT::mqtt_fresh_state(const char *mqtt_host, uint16_t mqtt_port, mqtt_wrappe
   ip_addr_t host_addr;
   if (run_dns_lookup(mqtt_host, &host_addr)) {
     printf("[dns] failed to resolve host\n");
-    return -1;
-  }
-  printf("[dns] resolved addr to %s.\n", ip4addr_ntoa(&host_addr));
-
-  state->mqtt_client = mqtt_client_new();
-  if (state->mqtt_client == NULL) {
-    printf("[mqtt] failed to create client\n");
     return -2;
   }
+  printf("[dns] resolved addr to %s.\n", ip4addr_ntoa(&host_addr));
 
   int res = mqtt_connect(host_addr, mqtt_port, state);
   if (res != 0) {
@@ -233,8 +226,6 @@ const char* IOT::get_topic_prefix() {
 
 int IOT::mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *state) {
   struct mqtt_connect_client_info_t ci;
-  err_t err;
-
   memset(&ci, 0, sizeof(ci));
 
   ci.client_id = get_client_id();
@@ -248,7 +239,7 @@ int IOT::mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *s
 #else
   ci.client_pass = NULL;
 #endif
-  ci.keep_alive = 0;
+  ci.keep_alive = 10; // seconds. beware: mosquitto has an issue that rejects clients with 0 keep_alive
   ci.will_topic = NULL;
   ci.will_msg = NULL;
   ci.will_retain = 0;
@@ -286,7 +277,7 @@ int IOT::mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *s
 #endif // MQTT_TLS
 
   cyw43_arch_lwip_begin();
-  err = mqtt_client_connect(state->mqtt_client, &host_addr, host_port, _iot_mqtt_connection_cb, state, &ci);
+  err_t err = mqtt_client_connect(state->mqtt_client, &host_addr, host_port, _iot_mqtt_connection_cb, state, &ci);
   // memp_malloc: out of memory in pool TCP_PCB
   cyw43_arch_lwip_end();
   if (err != ERR_OK) {
@@ -314,14 +305,13 @@ int IOT::mqtt_test_publish(mqtt_wrapper_t *state)
 
   sprintf(buffer, "hello from picow %s %d / %d %s", get_client_id(), state->received, state->counter, TLS_STR);
 
-  return topic_publish("testing", buffer);
+  return topic_publish("/testing", buffer);
 }
 
 int IOT::topic_publish(const char *topicsuffix, const char *buffer)
 {
   char topic[256] = {0};
   strncpy(topic, get_topic_prefix(), sizeof(topic));
-  strncat(topic, "/", sizeof(topic) - strlen(topic));
   strncat(topic, topicsuffix, sizeof(topic) - strlen(topic));
 
   err_t err;
@@ -342,7 +332,7 @@ int IOT::topic_publish(const char *topicsuffix, const char *buffer)
 
 void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status) {
 //  mqtt_wrapper_t *state = (mqtt_wrapper_t*)arg;
-  if (status != 0) {
+  if (status != MQTT_CONNECT_ACCEPTED) {
     printf("[mqtt] connection failed (callback): %d\n", status);
     return;
   }
@@ -351,17 +341,24 @@ void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_
   mqtt_set_inpub_callback(client, _iot_mqtt_publish_data_cb, _iot_mqtt_incoming_data_cb, arg);
 
   // subscribe to various topics
-  const char* suffixes[3] = {"/light/switch", "/brightness/set", "/rgb/set"};
-  for(unsigned int i = 0; i < sizeof(suffixes); i++) {
+//  const char* suffixes[3] = {"/light/switch", "/brightness/set", "/rgb/set"};
+//  for(unsigned int i = 0; i < sizeof(suffixes); i++) {
+//    char topic[256];
+//    sprintf(topic, "%s%s", get_topic_prefix(), suffixes[i]);
+//    printf("[mqtt] subscribing to %s\n", topic);
+//    err_t err = mqtt_subscribe(client, topic, 2, _iot_mqtt_sub_request_cb, topic);
+//    if (err != ERR_OK) {
+//      printf("[mqtt] mqtt_subscribe %s returned error: %d\n", topic, err);
+//    }
+//    break;
+//  }
     char topic[256];
-    sprintf(topic, "%s%s", get_topic_prefix(), suffixes[i]);
+    sprintf(topic, "%s/set", get_topic_prefix());
     printf("[mqtt] subscribing to %s\n", topic);
     err_t err = mqtt_subscribe(client, topic, 2, _iot_mqtt_sub_request_cb, topic);
     if (err != ERR_OK) {
       printf("[mqtt] mqtt_subscribe %s returned error: %d\n", topic, err);
     }
-    break;
-  }
 
   printf("should call connect_cb\n");
   if (_connect_cb) {
@@ -372,21 +369,21 @@ void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_
 //  if (_connect_cb) _connect_cb();
 }
 
-void IOT::publish_switch_state(bool on) {
-  topic_publish("light/status", on ? light_on : light_off);
-}
-
-void IOT::publish_brightness(float brightness) {
-  char buffer[128];
-  snprintf(buffer, sizeof(buffer), "%d", int(brightness*mqtt_brightness_scale));
-  topic_publish("brightness/status", buffer);
-}
-
-void IOT::publish_colour(float r, float g, float b) {
-  char buffer[128];
-  snprintf(buffer, sizeof(buffer), "%d,%d,%d", int(r*mqtt_rgb_scale), int(g*mqtt_rgb_scale), int(b*mqtt_rgb_scale));
-  topic_publish("rgb/status", buffer);
-}
+//void IOT::publish_switch_state(bool on) {
+//  topic_publish("/light/status", on ? light_on : light_off);
+//}
+//
+//void IOT::publish_brightness(float brightness) {
+//  char buffer[128];
+//  snprintf(buffer, sizeof(buffer), "%d", int(brightness*mqtt_brightness_scale));
+//  topic_publish("/brightness/status", buffer);
+//}
+//
+//void IOT::publish_colour(float r, float g, float b) {
+//  char buffer[128];
+//  snprintf(buffer, sizeof(buffer), "%d,%d,%d", int(r*mqtt_rgb_scale), int(g*mqtt_rgb_scale), int(b*mqtt_rgb_scale));
+//  topic_publish("/rgb/status", buffer);
+//}
 
 void IOT::_mqtt_pub_request_cb(void *arg, err_t err) {
   mqtt_wrapper_t *state = (mqtt_wrapper_t*)arg;
@@ -410,7 +407,8 @@ void IOT::_mqtt_sub_request_cb(void *arg, err_t err) {
 
 void IOT::_mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
 //  mqtt_wrapper_t *state = (mqtt_wrapper_t *) arg;
-  printf("[mqtt] (cb) incoming data: %s\n", (const char*)data);
+  printf("[mqtt] (cb) incoming data (len:%d, flags:%x): %.*s\n", len, flags, len, (const char*)data);
+
 }
 
 void IOT::_mqtt_publish_data_cb(void *arg, const char *topic, u32_t tot_len) {

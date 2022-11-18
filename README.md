@@ -139,18 +139,24 @@ cmake ..
 - Add the following to your `configuration.yaml`:
 
 ```yaml
-light:
-  platform: mqtt
-  name: 'Ledcontrol light'
-  state_topic: 'picow/ledcontrol/light/status'
-  command_topic: 'picow/ledcontrol/light/switch'
-  brightness_state_topic: 'picow/ledcontrol/brightness/status'
-  brightness_command_topic: 'picow/ledcontrol/brightness/set'
-  rgb_state_topic: 'picow/ledcontrol/rgb/status'
-  rgb_command_topic: 'picow/ledcontrol/rgb/set'
-  brightness_scale: 100
-  optimistic: false
+mqtt:
+  light:
+    - schema: json
+      name: LED light
+      unique_id: picow_ledcontrol1
+      state_topic: 'picow/ledcontrol'
+      command_topic: 'picow/ledcontrol/set'
+      brightness_scale: 100
+      color_mode: true
+      supported_color_modes: ["hs", "rgbw"]
+      effect: true
+      effect_list: ['hue_cycle', 'white_chase']
+      icon: 'mdi:led-strip-variant'
+      optimistic: false
 ```
+
+(You should change `unique_id` to a unique value if you have multiple Pico Ws using this code)
+
 
 ## Build
 

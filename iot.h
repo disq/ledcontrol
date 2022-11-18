@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <cstdint>
+#include "config_iot.h"
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 #include "hardware/structs/rosc.h"
@@ -25,8 +26,8 @@ class IOT {
     mqtt_wrapper_t *global_state;
 
     const char *light_on = "ON", *light_off = "OFF";
-    const float mqtt_brightness_scale = 100.0f;
-    const float mqtt_rgb_scale = 255.0f;
+//    const float mqtt_brightness_scale = 100.0f;
+//    const float mqtt_rgb_scale = 255.0f;
 
     void (*_connect_cb)();
     void (*_loop_cb)();
@@ -35,7 +36,6 @@ class IOT {
     int run_dns_lookup(const char *host, ip_addr_t *addr);
     int mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *state);
     void mqtt_disconnect_and_free(mqtt_wrapper_t *state);
-    int topic_publish(const char *topicsuffix, const char *buffer);
     int mqtt_test_publish(mqtt_wrapper_t *state);
     int mqtt_fresh_state(const char *mqtt_host, uint16_t mqtt_port, mqtt_wrapper_t *state);
 
@@ -46,9 +46,10 @@ class IOT {
     const char* get_client_id();
     const char* get_topic_prefix();
     int mqtt_run_test(const char *mqtt_host, uint16_t mqtt_port);
-    void publish_switch_state(bool on);
-    void publish_brightness(float brightness);
-    void publish_colour(float r, float g, float b);
+    int topic_publish(const char *topicsuffix, const char *buffer);
+//    void publish_switch_state(bool on);
+//    void publish_brightness(float brightness);
+//    void publish_colour(float r, float g, float b);
 
     // callbacks
     void _dns_found_cb(const char *name, const ip_addr_t *ipaddr, void *callback_arg);

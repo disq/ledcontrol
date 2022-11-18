@@ -29,10 +29,10 @@ sleep_ms(10);
 
 void publish_state(ledcontrol::LEDControl::state_t state) {
   char buffer[2048] = {0};
-  snprintf(buffer, sizeof(buffer), "{\"brightness\": %d, \"color_mode\":\"hs\", \"color\": {\"h\": %d, \"s\": %d}, \"effect\":\"%s\", \"transition\":%d, \"state\":\"%s\"}",
+  snprintf(buffer, sizeof(buffer), "{\"brightness\": %d, \"color_mode\":\"hs\", \"color\": {\"h\": %d, \"s\": %d}, \"effect\":\"%s:%s\", \"state\":\"%s\"}",
           (int)(state.brightness * 100.0f), (int)(state.hue * 360.0f), (int)(state.angle * 100),
-          state.effect == ledcontrol::LEDControl::EFFECT_MODE::HUE_CYCLE ? "hue_cycle" : "white_chase",
-          (int)(state.speed * 100.0f),
+          leds->effect_to_str(state.effect),
+          leds->speed_to_str(state.speed),
           state.on ? "ON" : "OFF"
           );
   iot.topic_publish("", buffer);
@@ -82,18 +82,20 @@ void on_command(const char *data, size_t len) {
   {
     auto effect = cJSON_GetObjectItem(json, "effect");
     if (cJSON_IsString(effect) && (effect->valuestring != NULL)) {
-      if (strcmp(effect->valuestring, "hue_cycle") == 0) {
-        if (state.effect != ledcontrol::LEDControl::EFFECT_MODE::HUE_CYCLE) {
-          state.effect = ledcontrol::LEDControl::EFFECT_MODE::HUE_CYCLE;
-          changed = true;
-        }
-      } else if (strcmp(effect->valuestring, "white_chase") == 0) {
-        if (state.effect != ledcontrol::LEDControl::EFFECT_MODE::WHITE_CHASE) {
-          state.effect = ledcontrol::LEDControl::EFFECT_MODE::WHITE_CHASE;
-          changed = true;
-        }
-      } else {
+      ledcontrol::LEDControl::EFFECT_MODE eff;
+      float_t speed;
+      int res = leds->parse_effect_str((const char *)effect->valuestring, &eff, &speed);
+      if (res < 0) {
         printf("[on_command] received unknown effect: %s\n", effect->valuestring);
+      } else {
+        if (state.effect != eff) {
+          state.effect = eff;
+          changed = true;
+        }
+        if (res == 1 && state.speed != speed) {
+          state.speed = speed;
+          changed = true;
+        }
       }
     }
   }

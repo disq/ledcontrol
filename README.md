@@ -1,8 +1,8 @@
 # Pico LED Control
 
-Simple LED Control project for Raspberry Pi Pico.
+Simple LED Control project for Raspberry Pi Pico and Pico W with MQTT.
 
-![image](./doc/cycle.gif)
+![image](./doc/cycle.gif) ![home assistant](./doc/ha-shot.png)
 
 - [Hardware](#hardware)
 - [Usage](#usage)
@@ -79,7 +79,7 @@ sudo apt install cmake gcc-arm-none-eabi build-essential
 
 And the Pico SDK:
 
-```
+```bash
 git clone https://github.com/raspberrypi/pico-sdk
 cd pico-sdk
 git checkout develop # Switch to develop branch
@@ -92,13 +92,13 @@ The `PICO_SDK_PATH` set above will only last the duration of your session.
 
 You should ensure your `PICO_SDK_PATH` environment variable is set by `~/.profile`:
 
-```
+```bash
 export PICO_SDK_PATH="/path/to/pico-sdk"
 ```
 
 ## Grab the Pimoroni libraries
 
-```
+```bash
 git clone https://github.com/pimoroni/pimoroni-pico
 cd pimoroni-pico
 git submodule update --init
@@ -107,7 +107,7 @@ cd ..
 
 ## Clone this repository
 
-```
+```bash
 git clone https://github.com/disq/ledcontrol
 cd ledcontrol
 git submodule update --init
@@ -119,7 +119,7 @@ See `config.h` to configure number of LEDs and defaults, or to customize the pin
 
 Then in `ledcontrol` directory:
 
-```
+```bash
 mkdir build
 cd build
 cmake ..
@@ -170,11 +170,12 @@ If using multiple Pico Ws using this code, you should:
 
 - Change `unique_id` to a unique value
 - Either define `MQTT_ADD_BOARD_ID_TO_TOPIC` in `config_iot.h`, or set different names for `MQTT_TOPIC_PREFIX` (or both). Update `state_topic` and `command_topic` in `configuration.yaml` accordingly.
+- Let me know if I missed something by [opening an issue](https://github.com/disq/ledcontrol/issues/new) ;-)
 
 
 ## Build
 
-```
+```bash
 cd build
 make ledcontrol
 ```
@@ -184,7 +185,11 @@ make ledcontrol
 Hold down the BOOTSEL button on the Pico and plug it into your computer. The Pico will appear as a USB drive called `RPI-RP2`. Copy the `ledcontrol.uf2` file to the root of the drive.
 
 for macOS Ventura, try:
-```
+```bash
 cd build
 /bin/cp -X ledcontrol.uf2 /Volumes/RPI-RP2/
 ```
+
+## Troubleshooting
+
+Connect the Pico to the USB and use a terminal emulator (I use `screen` which might not be the friendliest...) to connect to the Pico's serial port and follow the messages.

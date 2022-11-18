@@ -49,6 +49,7 @@ namespace ledcontrol {
             float_t brightness;
             enum EFFECT_MODE effect;
             enum ENCODER_MODE mode;
+            bool on;
         } state_t;
 
         void init(Encoder *e);
@@ -89,6 +90,7 @@ namespace ledcontrol {
         // private methods
         void cycle_loop(float hue, float t, float angle);
         uint16_t get_paused_time();
+        uint8_t get_effective_brightness();
         void set_cycle(bool v);
         uint32_t encoder_colour_by_mode(ENCODER_MODE mode);
         void encoder_loop();

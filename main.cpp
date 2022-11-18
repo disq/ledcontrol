@@ -7,6 +7,7 @@
 #include "ledcontrol.h"
 #include "hardware/flash.h"
 #include "hardware/sync.h"
+#include <math.h>
 
 ledcontrol::LEDControl *leds = NULL;
 
@@ -32,7 +33,7 @@ void publish_state(ledcontrol::LEDControl::state_t state) {
           (int)(state.brightness * 100.0f), (int)(state.hue * 360.0f), (int)(state.angle * 100),
           state.effect == ledcontrol::LEDControl::EFFECT_MODE::HUE_CYCLE ? "hue_cycle" : "white_chase",
           (int)(state.speed * 100.0f),
-          state.mode == ledcontrol::LEDControl::ENCODER_MODE::OFF ? "OFF" : "ON"
+          state.on ? "ON" : "OFF"
           );
   iot.topic_publish("", buffer);
 }
@@ -42,9 +43,6 @@ void on_state_change(ledcontrol::LEDControl::state_t new_state) {
          new_state.angle, new_state.speed, new_state.brightness, new_state.mode, new_state.effect);
 
   publish_state(new_state);
-//  iot.publish_switch_state(new_state.effect == ledcontrol::LEDControl::HUE_CYCLE);
-//  iot.publish_brightness(new_state.brightness);
-//  iot.publish_colour(0.3, 0.5, 0.7);
 }
 
 void on_command(const char *data, size_t len) {
@@ -56,10 +54,86 @@ void on_command(const char *data, size_t len) {
     printf("[on_command] json parse failed\n");
     return;
   }
-  char *s = cJSON_Print(json);
-  printf("here: %s\n", s);
-  free(s);
+//  char *s = cJSON_Print(json);
+//  printf("here: %s\n", s);
+//  free(s);
+
+  auto state = leds->get_state();
+  bool changed = false;
+  {
+    auto on_off = cJSON_GetObjectItem(json, "state");
+    if (cJSON_IsString(on_off) && (on_off->valuestring != NULL)) {
+      if (strcmp(on_off->valuestring, "ON") == 0) {
+        if (state.on != true) {
+          state.on = true;
+          changed = true;
+        }
+      } else if (strcmp(on_off->valuestring, "OFF") == 0) {
+        if (state.on != false) {
+          state.on = false;
+          changed = true;
+        }
+      } else {
+        printf("[on_command] received unknown state: %s\n", on_off->valuestring);
+      }
+    }
+  }
+
+  {
+    auto effect = cJSON_GetObjectItem(json, "effect");
+    if (cJSON_IsString(effect) && (effect->valuestring != NULL)) {
+      if (strcmp(effect->valuestring, "hue_cycle") == 0) {
+        if (state.effect != ledcontrol::LEDControl::EFFECT_MODE::HUE_CYCLE) {
+          state.effect = ledcontrol::LEDControl::EFFECT_MODE::HUE_CYCLE;
+          changed = true;
+        }
+      } else if (strcmp(effect->valuestring, "white_chase") == 0) {
+        if (state.effect != ledcontrol::LEDControl::EFFECT_MODE::WHITE_CHASE) {
+          state.effect = ledcontrol::LEDControl::EFFECT_MODE::WHITE_CHASE;
+          changed = true;
+        }
+      } else {
+        printf("[on_command] received unknown effect: %s\n", effect->valuestring);
+      }
+    }
+  }
+
+  {
+    auto color = cJSON_GetObjectItem(json, "color");
+    if (cJSON_IsObject(color)) {
+      auto hVal = cJSON_GetObjectItem(color, "h");
+      auto hSal = cJSON_GetObjectItem(color, "s");
+      if (cJSON_IsNumber(hVal) && cJSON_IsNumber(hSal)) {
+        float h = hVal->valuedouble / 360.0f;
+        float s = hSal->valuedouble / 100.0f;
+        if (state.hue != h || state.angle != s) {
+          state.hue = h;
+          state.angle = s;
+          changed = true;
+        }
+      } else {
+        printf("[on_command] received unknown color\n");
+      }
+    }
+  }
+
+  {
+    auto brightness = cJSON_GetObjectItem(json, "brightness");
+    if (cJSON_IsNumber(brightness)) {
+      float b = brightness->valuedouble / 100.0f;
+      if (!std::isnan(b) && !std::isinf(b) && state.brightness != b) {
+        state.brightness = b;
+        changed = true;
+      }
+    }
+  }
+
   cJSON_Delete(json);
+
+  if (changed) {
+    printf("[on_command] applying new state\n");
+    leds->enable_state(state);
+  }
 }
 
 void on_mqtt_connect() {

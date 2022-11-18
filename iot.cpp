@@ -341,25 +341,13 @@ void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_
 
   mqtt_set_inpub_callback(client, _iot_mqtt_publish_data_cb, _iot_mqtt_incoming_data_cb, arg);
 
-  // subscribe to various topics
-//  const char* suffixes[3] = {"/light/switch", "/brightness/set", "/rgb/set"};
-//  for(unsigned int i = 0; i < sizeof(suffixes); i++) {
-//    char topic[256];
-//    sprintf(topic, "%s%s", get_topic_prefix(), suffixes[i]);
-//    printf("[mqtt] subscribing to %s\n", topic);
-//    err_t err = mqtt_subscribe(client, topic, 2, _iot_mqtt_sub_request_cb, topic);
-//    if (err != ERR_OK) {
-//      printf("[mqtt] mqtt_subscribe %s returned error: %d\n", topic, err);
-//    }
-//    break;
-//  }
-    char topic[256];
-    sprintf(topic, "%s/set", get_topic_prefix());
-    printf("[mqtt] subscribing to %s\n", topic);
-    err_t err = mqtt_subscribe(client, topic, 2, _iot_mqtt_sub_request_cb, topic);
-    if (err != ERR_OK) {
-      printf("[mqtt] mqtt_subscribe %s returned error: %d\n", topic, err);
-    }
+  char topic[256];
+  sprintf(topic, "%s/set", get_topic_prefix());
+  printf("[mqtt] subscribing to %s\n", topic);
+  err_t err = mqtt_subscribe(client, topic, 2, _iot_mqtt_sub_request_cb, topic);
+  if (err != ERR_OK) {
+    printf("[mqtt] mqtt_subscribe %s returned error: %d\n", topic, err);
+  }
 
   if (_connect_cb) _connect_cb();
 }

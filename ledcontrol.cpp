@@ -157,11 +157,23 @@ void LEDControl::init(Encoder *e) {
   set_cycle(true);
 }
 
+uint8_t LEDControl::get_effective_brightness() {
+  if (!state.on) return 0;
+
+  return (uint8_t)(state.brightness*BRIGHTNESS_SCALE);
+}
+
 void LEDControl::enable_state(state_t p_state) {
-  printf("[enable_state] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d\n", state.hue, state.angle, state.speed, state.brightness, state.mode, state.effect);
+  // clamp in case we loaded from flash or iot
+  p_state.hue = std::min(1.0f, std::max(0.0f, p_state.hue));
+  p_state.angle = std::min(1.0f, std::max(0.0f, p_state.angle));
+  p_state.speed = std::min(MAX_SPEED, std::max(MIN_SPEED, p_state.speed));
+  p_state.brightness = std::min(MAX_BRIGHTNESS, std::max(MIN_BRIGHTNESS, p_state.brightness));
+  if (p_state.effect < 0 || p_state.effect >= EFFECT_COUNT) p_state.effect = DEFAULT_STATE.effect;
 
   state = p_state;
-  led_strip.setBrightness((uint8_t)(state.brightness*BRIGHTNESS_SCALE));
+  printf("[enable_state] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d\n", state.hue, state.angle, state.speed, state.brightness, state.mode, state.effect);
+  led_strip.setBrightness(get_effective_brightness());
   led_strip.show();
   set_encoder_state();
   if (_on_state_change_cb) _on_state_change_cb(state);
@@ -259,7 +271,7 @@ uint32_t LEDControl::loop() {
           case ENCODER_MODE::BRIGHTNESS:
             state.brightness = std::min(MAX_BRIGHTNESS, std::max(MIN_BRIGHTNESS, state.brightness + count));
             printf("new brightness: %f\n", state.brightness);
-            led_strip.setBrightness((uint8_t) (state.brightness * BRIGHTNESS_SCALE));
+            led_strip.setBrightness(get_effective_brightness());
             enc->set_brightness(state.brightness);
             led_strip.show();
             break;
@@ -275,6 +287,8 @@ uint32_t LEDControl::loop() {
             printf("new effect: %d\n", state.effect);
             break;
         }
+
+        state.on = true; // always set to on if there is a change
 
         switch (state.mode) {
           default:
@@ -308,7 +322,7 @@ uint32_t LEDControl::loop() {
     sleep_ms(1500);
     save_state_to_flash();
 
-    led_strip.setBrightness((uint8_t)(state.brightness*BRIGHTNESS_SCALE));
+    led_strip.setBrightness(get_effective_brightness());
     led_strip.show();
   }
 

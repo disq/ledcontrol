@@ -146,9 +146,10 @@ mqtt:
       unique_id: picow_ledcontrol1
       state_topic: 'picow/ledcontrol'
       command_topic: 'picow/ledcontrol/set'
+      brightness: true
       brightness_scale: 100
       color_mode: true
-      supported_color_modes: ["hs", "rgbw"]
+      supported_color_modes: ["hs"]
       effect: true
       effect_list: ['hue_cycle', 'white_chase']
       icon: 'mdi:led-strip-variant'

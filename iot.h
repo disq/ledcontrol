@@ -25,10 +25,6 @@ class IOT {
 
     mqtt_wrapper_t *global_state;
 
-    const char *light_on = "ON", *light_off = "OFF";
-//    const float mqtt_brightness_scale = 100.0f;
-//    const float mqtt_rgb_scale = 255.0f;
-
     void (*_connect_cb)();
     void (*_command_cb)(const char *data, size_t len);
     void (*_loop_cb)();
@@ -49,9 +45,6 @@ class IOT {
     const char* get_topic_prefix();
     int mqtt_run_test(const char *mqtt_host, uint16_t mqtt_port);
     int topic_publish(const char *topicsuffix, const char *buffer);
-//    void publish_switch_state(bool on);
-//    void publish_brightness(float brightness);
-//    void publish_colour(float r, float g, float b);
 
     // callbacks
     void _dns_found_cb(const char *name, const ip_addr_t *ipaddr, void *callback_arg);

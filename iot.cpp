@@ -16,6 +16,8 @@ const char *key = MQTT_TLS_KEY;
 #endif
 #endif
 
+extern cyw43_t cyw43_state;
+
 IOT::IOT():
 global_state(NULL),
 _connect_cb(NULL),
@@ -30,24 +32,28 @@ int IOT::init(const char *ssid, const char *password, uint32_t authmode, void (*
   cyw43_arch_enable_sta_mode();
 
   printf("[wifi] connecting...\n");
-  if (cyw43_arch_wifi_connect_timeout_ms(ssid, password, authmode, 30000)) {
-    printf("[wifi] failed to connect\n");
+  if (cyw43_arch_wifi_connect_async(ssid, password, authmode)) {
+    printf("[wifi] failed to start connection\n");
     return -1;
   }
 
-  printf("[wifi] connected\n");
+  while(true) {
+    int res = cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA);
+    if (res >= CYW43_LINK_UP) break;
+    if (res < 0) {
+      printf("[wifi] failed to connect: %d\n", res);
+      return -2;
+    }
+    poll_wifi();
+  }
 
-//  mqtt_run_test(MQTT_SERVER_HOST, MQTT_SERVER_PORT);
+  printf("[wifi] connected\n");
   return 0;
 }
 
 int IOT::connect() {
   mqtt_wrapper_t *state = new mqtt_wrapper_t();
   state->mqtt_client = NULL;
-  state->reconnect = 0;
-  state->received = 0;
-  state->receiving = 0;
-  state->counter = 0;
   int res = mqtt_fresh_state(MQTT_SERVER_HOST, MQTT_SERVER_PORT, state);
   if (res != 0) {
     printf("[mqtt] failed to init: %d\n", res);
@@ -61,8 +67,6 @@ int IOT::connect() {
 }
 
 void IOT::poll_wifi(uint32_t min_sleep_ms) {
-//  if (min_sleep_ms < 1) min_sleep_ms = 1;
-
   uint32_t start_time = to_ms_since_boot(get_absolute_time());
   uint32_t last_time;
   do {
@@ -135,66 +139,6 @@ int IOT::mqtt_fresh_state(const char *mqtt_host, uint16_t mqtt_port, mqtt_wrappe
     printf("[mqtt] failed to connect: %d\n", res);
     return -3;
   }
-
-  return 0;
-}
-
-int IOT::mqtt_run_test(const char *mqtt_host, uint16_t mqtt_port) {
-  mqtt_wrapper_t *state = new mqtt_wrapper_t();
-  state->mqtt_client = NULL;
-  state->reconnect = 0;
-  state->received = 0;
-  state->receiving = 0;
-  state->counter = 0;
-  int res = mqtt_fresh_state(mqtt_host, mqtt_port, state);
-  if (res != 0) {
-    printf("[mqtt] failed to init: %d\n", res);
-    return res;
-  }
-
-#if PICO_CYW43_ARCH_POLL
-  const uint32_t max_wait = 5000;
-
-  u32_t notReady = max_wait;
-#endif
-
-  while (true) {
-    poll_wifi();
-#if PICO_CYW43_ARCH_POLL
-    if (!notReady--) {
-#else
-    {
-#endif
-#if PICO_CYW43_ARCH_POLL
-      notReady = max_wait;
-#endif
-
-      cyw43_arch_lwip_begin();
-      bool connected = mqtt_client_is_connected(state->mqtt_client);
-      cyw43_arch_lwip_end();
-      if (!connected) {
-        printf(",");
-        continue;
-      }
-
-      printf("[mqtt] connected\n");
-      state->receiving = 1;
-      err_t err = mqtt_test_publish(state);
-      if (err != ERR_OK) {
-        printf("[mqtt] failed to publish, will retry: %d\n", err);
-        continue;
-      }
-      printf("[mqtt] published %d\n", state->counter);
-      state->counter++;
-      poll_wifi(5000);
-
-      int res = mqtt_fresh_state(mqtt_host, mqtt_port, state);
-      if (res != 0) {
-        printf("[mqtt] failed to reinit: %d\n", res);
-        return res;
-      }
-    }
-  } // while
 
   return 0;
 }
@@ -290,36 +234,15 @@ int IOT::mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *s
   return 0;
 }
 
-int IOT::mqtt_test_publish(mqtt_wrapper_t *state)
-{
-  char buffer[128];
-
-#ifdef MQTT_TLS
-#ifdef MQTT_TLS_INSECURE
-#define TLS_STR "TLS insecure"
-#else
-#define TLS_STR "TLS"
-#endif
-#else
-#define TLS_STR ""
-#endif
-
-  sprintf(buffer, "hello from picow %s %d / %d %s", get_client_id(), state->received, state->counter, TLS_STR);
-
-  return topic_publish("/testing", buffer);
-}
-
-int IOT::topic_publish(const char *topicsuffix, const char *buffer)
-{
+int IOT::topic_publish(const char *topicsuffix, const char *buffer) {
   char topic[256] = {0};
   strncpy(topic, get_topic_prefix(), sizeof(topic));
   strncat(topic, topicsuffix, sizeof(topic) - strlen(topic));
 
-  err_t err;
-  u8_t qos = 2; /* 0 1 or 2, see MQTT specification */
+  u8_t qos = 2; // exactly once
   u8_t retain = 1;
   cyw43_arch_lwip_begin();
-  err = mqtt_publish(global_state->mqtt_client, topic, buffer, strlen(buffer), qos, retain, _iot_mqtt_pub_request_cb, global_state);
+  err_t err = mqtt_publish(global_state->mqtt_client, topic, buffer, strlen(buffer), qos, retain, _iot_mqtt_pub_request_cb, global_state);
   cyw43_arch_lwip_end();
 
   if (err == ERR_OK) {
@@ -332,19 +255,18 @@ int IOT::topic_publish(const char *topicsuffix, const char *buffer)
 }
 
 void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status) {
-//  mqtt_wrapper_t *state = (mqtt_wrapper_t*)arg;
   if (status != MQTT_CONNECT_ACCEPTED) {
     printf("[mqtt] connection failed (callback): %d\n", status);
     return;
   }
   printf("[mqtt] connected (callback)\n");
 
-  mqtt_set_inpub_callback(client, _iot_mqtt_publish_data_cb, _iot_mqtt_incoming_data_cb, arg);
+  mqtt_set_inpub_callback(client, _iot_mqtt_publish_data_cb, _iot_mqtt_incoming_data_cb, NULL);
 
   char topic[256];
   sprintf(topic, "%s/set", get_topic_prefix());
   printf("[mqtt] subscribing to %s\n", topic);
-  err_t err = mqtt_subscribe(client, topic, 2, _iot_mqtt_sub_request_cb, topic);
+  err_t err = mqtt_subscribe(client, topic, 2, _iot_mqtt_sub_request_cb, NULL);
   if (err != ERR_OK) {
     printf("[mqtt] mqtt_subscribe %s returned error: %d\n", topic, err);
   }
@@ -352,50 +274,28 @@ void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_
   if (_connect_cb) _connect_cb();
 }
 
-//void IOT::publish_switch_state(bool on) {
-//  topic_publish("/light/status", on ? light_on : light_off);
-//}
-//
-//void IOT::publish_brightness(float brightness) {
-//  char buffer[128];
-//  snprintf(buffer, sizeof(buffer), "%d", int(brightness*mqtt_brightness_scale));
-//  topic_publish("/brightness/status", buffer);
-//}
-//
-//void IOT::publish_colour(float r, float g, float b) {
-//  char buffer[128];
-//  snprintf(buffer, sizeof(buffer), "%d,%d,%d", int(r*mqtt_rgb_scale), int(g*mqtt_rgb_scale), int(b*mqtt_rgb_scale));
-//  topic_publish("/rgb/status", buffer);
-//}
-
 void IOT::_mqtt_pub_request_cb(void *arg, err_t err) {
-  mqtt_wrapper_t *state = (mqtt_wrapper_t*)arg;
   if (err == ERR_OK) {
     printf("[mqtt] (cb) publish successful\n");
   } else {
     printf("[mqtt] (cb) publish failed: %d\n", err);
   }
-  state->receiving=0;
-  state->received++;
 }
 
 void IOT::_mqtt_sub_request_cb(void *arg, err_t err) {
-  auto topic = (const char*)arg;
   if (err == ERR_OK) {
-    printf("[mqtt] (cb) subscribe to %s successful\n", topic);
+    printf("[mqtt] (cb) subscribe successful\n");
   } else {
-    printf("[mqtt] (cb) subscribe to %s failed: %d\n", topic, err);
+    printf("[mqtt] (cb) subscribe failed: %d\n", err);
   }
 }
 
 void IOT::_mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
-//  mqtt_wrapper_t *state = (mqtt_wrapper_t *) arg;
   printf("[mqtt] (cb) incoming data (len:%d, flags:%x): %.*s\n", len, flags, len, (const char*)data);
   if (_command_cb) _command_cb((const char*)data, (size_t)len);
 }
 
 void IOT::_mqtt_publish_data_cb(void *arg, const char *topic, u32_t tot_len) {
-//  mqtt_wrapper_t *state = (mqtt_wrapper_t *) arg;
   printf("[mqtt] (cb) publish data on topic: %s (length: %d)\n", topic, tot_len);
 }
 

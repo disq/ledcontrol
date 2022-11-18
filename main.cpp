@@ -4,10 +4,11 @@
 #include "cjson/cJSON.h"
 #endif
 
-#include "ledcontrol.h"
 #include "hardware/flash.h"
 #include "hardware/sync.h"
 #include <math.h>
+#include "ledcontrol.h"
+#include "config.h"
 
 ledcontrol::LEDControl *leds = NULL;
 
@@ -22,9 +23,18 @@ void board_led(bool val) {
 
 #ifdef RASPBERRYPI_PICO_W
 void wifi_looper() {
-//  uint32_t req_ms = leds->loop();
-//  sleep_ms(req_ms);
-sleep_ms(10);
+  static bool looper_beeper = false;
+  static uint32_t last_looper_beeper_change = 0;
+
+  uint32_t req_ms = leds->loop();
+  sleep_ms(req_ms);
+
+  uint32_t ts = to_ms_since_boot(get_absolute_time());
+  if (ts - last_looper_beeper_change > 500) {
+    last_looper_beeper_change = ts;
+    looper_beeper = !looper_beeper;
+    board_led(looper_beeper);
+  }
 }
 
 void publish_state(ledcontrol::LEDControl::state_t state) {
@@ -144,9 +154,6 @@ void on_mqtt_connect() {
 
   auto cur_state = leds->get_state();
   publish_state(cur_state);
-//  iot.publish_switch_state(true);
-//  iot.publish_brightness(cur_state.brightness);
-//  iot.publish_colour(0.3, 0.5, 0.7);
 }
 #endif
 
@@ -162,13 +169,17 @@ void error_loop(uint32_t delay_ms) {
 int main() {
   stdio_init_all();
 #ifdef RASPBERRYPI_PICO_W
+#ifdef WIFI_COUNTRY_CODE
   if (cyw43_arch_init_with_country(WIFI_COUNTRY_CODE)) {
+#else
+  if (cyw43_arch_init()) {
+#endif
     printf("[error] WiFi init failed\n");
     error_loop(200);
   }
 #endif
 
-//  if (false)
+  if (false)
   {
     board_led(true);
     while (!stdio_usb_connected()) sleep_ms(100);
@@ -176,18 +187,17 @@ int main() {
     board_led(false);
   }
 
+  leds = new ledcontrol::LEDControl();
+  leds->init(&encoder);
+
 #ifdef RASPBERRYPI_PICO_W
   auto init_val = iot.init(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, wifi_looper, on_mqtt_connect, on_command);
   if (init_val != 0) {
     printf("[error] iot.init returned: %d\n", init_val);
     error_loop(1000);
   }
-#endif
+  board_led(false); // turn off 'looper beeper'
 
-  leds = new ledcontrol::LEDControl();
-  leds->init(&encoder);
-
-#ifdef RASPBERRYPI_PICO_W
   printf("Initiating MQTT connection\n");
   auto conn_val = iot.connect();
   if (conn_val != 0) {

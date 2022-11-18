@@ -17,10 +17,6 @@ class IOT {
   private:
     typedef struct {
         mqtt_client_t *mqtt_client;
-        u8_t receiving;
-        u32_t received;
-        u32_t counter;
-        u32_t reconnect;
     } mqtt_wrapper_t;
 
     mqtt_wrapper_t *global_state;
@@ -33,7 +29,6 @@ class IOT {
     int run_dns_lookup(const char *host, ip_addr_t *addr);
     int mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *state);
     void mqtt_disconnect_and_free(mqtt_wrapper_t *state);
-    int mqtt_test_publish(mqtt_wrapper_t *state);
     int mqtt_fresh_state(const char *mqtt_host, uint16_t mqtt_port, mqtt_wrapper_t *state);
 
   public:
@@ -43,7 +38,6 @@ class IOT {
     int connect();
     const char* get_client_id();
     const char* get_topic_prefix();
-    int mqtt_run_test(const char *mqtt_host, uint16_t mqtt_port);
     int topic_publish(const char *topicsuffix, const char *buffer);
 
     // callbacks

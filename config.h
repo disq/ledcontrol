@@ -44,7 +44,7 @@ const float_t MAX_SPEED = 0.18f; // let's be safe and not trigger anyone
 const uint UPDATES = 60;
 
 // Default brightness for the encoder LED
-const float_t ENC_DEFAULT_BRIGHTNESS = 1.0f;
+const float_t ENC_DEFAULT_BRIGHTNESS = 0.5f;
 
 // See connections section in README
 const uint LED_DATA_PIN = 28;

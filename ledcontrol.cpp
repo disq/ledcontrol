@@ -187,8 +187,8 @@ void LEDControl::encoder_loop() {
 }
 
 void LEDControl::set_encoder_state() {
-  enc->set_brightness(state.mode == ENCODER_MODE::BRIGHTNESS ? state.brightness : ENC_DEFAULT_BRIGHTNESS);
   encoder_colour_by_mode(state.mode);
+  enc->set_brightness(state.mode == ENCODER_MODE::BRIGHTNESS ? state.brightness : ENC_DEFAULT_BRIGHTNESS);
 }
 
 void LEDControl::init(Encoder *e) {

@@ -166,7 +166,10 @@ mqtt:
       optimistic: false
 ```
 
-(You should change `unique_id` to a unique value if you have multiple Pico Ws using this code)
+If using multiple Pico Ws using this code, you should:
+
+- Change `unique_id` to a unique value
+- Either define `MQTT_ADD_BOARD_ID_TO_TOPIC` in `config_iot.h`, or set different names for `MQTT_TOPIC_PREFIX` (or both). Update `state_topic` and `command_topic` in `configuration.yaml` accordingly.
 
 
 ## Build

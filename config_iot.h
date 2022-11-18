@@ -20,7 +20,7 @@
 //#define MQTT_TLS_INSECURE
 
 //#define MQTT_SERVER_HOST "91.121.93.94"
-// add contents of https://test.mosquitto.org/ssl/mosquitto.org.crt here
+// add contents of https://test.mosquitto.org/ssl/mosquitto.org.crt (or your own cert) here, if you want to connect securely
 #define MQTT_TLS_CERT "-----BEGIN CERTIFICATE-----\n" \
 "MIIEAzCCAuugAwIBAgIUBY1hlCGvdj4NhBXkZ/uLUZNILAwwDQYJKoZIhvcNAQEL\n" \
 "BQAwgZAxCzAJBgNVBAYTAkdCMRcwFQYDVQQIDA5Vbml0ZWQgS2luZ2RvbTEOMAwG\n" \
@@ -46,7 +46,7 @@
 "m/XriWr/Cq4h/JfB7NTsezVslgkBaoU=\n" \
 "-----END CERTIFICATE-----\n";
 
-// Enable and configure these if you want client side certificates
+// Enable and configure these (similar format to MQTT_TLS_CERT) if you want client side certificates
 /*
 #define MQTT_TLS_KEY \
 "-----BEGIN RSA PRIVATE KEY-----\n" \
@@ -72,6 +72,7 @@
 // Set this to add the board id to the topic prefix, so that a single firmware can be used for multiple boards
 //#define MQTT_ADD_BOARD_ID_TO_TOPIC
 
-#define WIFI_COUNTRY_CODE CYW43_COUNTRY_UK
+// Country code. Optionally, enable and change according to your country. Full list in https://raspberrypi.github.io/pico-sdk-doxygen/cyw43__country_8h.html
+//#define WIFI_COUNTRY_CODE CYW43_COUNTRY_UK
 
 #endif

@@ -1,6 +1,7 @@
 #include "pico/stdlib.h"
 #ifdef RASPBERRYPI_PICO_W
 #include "iot.h"
+#include "cjson/cJSON.h"
 #endif
 
 #include "ledcontrol.h"
@@ -46,6 +47,21 @@ void on_state_change(ledcontrol::LEDControl::state_t new_state) {
 //  iot.publish_colour(0.3, 0.5, 0.7);
 }
 
+void on_command(const char *data, size_t len) {
+  printf("[on_command] %.*s\n", len, data);
+
+  cJSON *json = cJSON_ParseWithLength(data, len);
+  if (json == NULL) {
+    cJSON_Delete(json);
+    printf("[on_command] json parse failed\n");
+    return;
+  }
+  char *s = cJSON_Print(json);
+  printf("here: %s\n", s);
+  free(s);
+  cJSON_Delete(json);
+}
+
 void on_mqtt_connect() {
   printf("mqtt connected\n");
   leds->set_on_state_change_cb(on_state_change);
@@ -58,12 +74,21 @@ void on_mqtt_connect() {
 }
 #endif
 
+void error_loop(uint32_t delay_ms) {
+  while(true) {
+    board_led(true);
+    sleep_ms(delay_ms);
+    board_led(false);
+    sleep_ms(delay_ms);
+  }
+}
+
 int main() {
   stdio_init_all();
 #ifdef RASPBERRYPI_PICO_W
   if (cyw43_arch_init_with_country(WIFI_COUNTRY_CODE)) {
-    printf("WiFi init failed\n");
-    return -1;
+    printf("[error] WiFi init failed\n");
+    error_loop(200);
   }
 #endif
 
@@ -76,16 +101,23 @@ int main() {
   }
 
 #ifdef RASPBERRYPI_PICO_W
-  auto val = iot.init(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, wifi_looper, on_mqtt_connect);
-  printf("iot returned: %d\n", val);
-//  while(true) sleep_ms(1000);
+  auto init_val = iot.init(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, wifi_looper, on_mqtt_connect, on_command);
+  if (init_val != 0) {
+    printf("[error] iot.init returned: %d\n", init_val);
+    error_loop(1000);
+  }
 #endif
 
   leds = new ledcontrol::LEDControl();
   leds->init(&encoder);
 
 #ifdef RASPBERRYPI_PICO_W
-  iot.connect();
+  printf("Initiating MQTT connection\n");
+  auto conn_val = iot.connect();
+  if (conn_val != 0) {
+    printf("[error] iot.connect returned: %d\n", conn_val);
+    error_loop(500);
+  }
 #endif
 
   while(true) {

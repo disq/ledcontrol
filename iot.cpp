@@ -22,9 +22,10 @@ _connect_cb(NULL),
 _loop_cb(NULL) {
 }
 
-int IOT::init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)(), void (*connect_cb)()) {
+int IOT::init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)(), void (*connect_cb)(), void (*command_cb)(const char *data, size_t len)) {
   _loop_cb = loop_cb;
   _connect_cb = connect_cb;
+  _command_cb = command_cb;
 
   cyw43_arch_enable_sta_mode();
 
@@ -360,13 +361,7 @@ void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_
       printf("[mqtt] mqtt_subscribe %s returned error: %d\n", topic, err);
     }
 
-  printf("should call connect_cb\n");
-  if (_connect_cb) {
-    printf("should call connect_cb here\n");
-    _connect_cb();
-    printf("called\n");
-  }
-//  if (_connect_cb) _connect_cb();
+  if (_connect_cb) _connect_cb();
 }
 
 //void IOT::publish_switch_state(bool on) {
@@ -408,7 +403,7 @@ void IOT::_mqtt_sub_request_cb(void *arg, err_t err) {
 void IOT::_mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
 //  mqtt_wrapper_t *state = (mqtt_wrapper_t *) arg;
   printf("[mqtt] (cb) incoming data (len:%d, flags:%x): %.*s\n", len, flags, len, (const char*)data);
-
+  if (_command_cb) _command_cb((const char*)data, (size_t)len);
 }
 
 void IOT::_mqtt_publish_data_cb(void *arg, const char *topic, u32_t tot_len) {

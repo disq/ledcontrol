@@ -30,6 +30,7 @@ class IOT {
 //    const float mqtt_rgb_scale = 255.0f;
 
     void (*_connect_cb)();
+    void (*_command_cb)(const char *data, size_t len);
     void (*_loop_cb)();
 
     void poll_wifi(uint32_t min_sleep_ms = 100);
@@ -42,6 +43,7 @@ class IOT {
   public:
     IOT();
     int init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)(), void (*connect_cb)());
+    int init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)(), void (*connect_cb)(), void (*command_cb)(const char *data, size_t len));
     int connect();
     const char* get_client_id();
     const char* get_topic_prefix();

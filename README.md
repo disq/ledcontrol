@@ -151,7 +151,17 @@ mqtt:
       color_mode: true
       supported_color_modes: ["hs"]
       effect: true
-      effect_list: ['hue_cycle', 'white_chase']
+      effect_list:
+        - 'hue_cycle:stopped'
+        - 'hue_cycle:superslow'
+        - 'hue_cycle:slow'
+        - 'hue_cycle:medium'
+        - 'hue_cycle:fast'
+        - 'white_chase:stopped'
+        - 'white_chase:superslow'
+        - 'white_chase:slow'
+        - 'white_chase:medium'
+        - 'white_chase:fast'
       icon: 'mdi:led-strip-variant'
       optimistic: false
 ```

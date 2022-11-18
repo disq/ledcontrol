@@ -55,4 +55,8 @@ void print_buf(const uint8_t *buf, size_t len) {
   }
 }
 
+static inline bool strstarts(const char *str, const char *prefix) {
+  return strncmp(str, prefix, strlen(prefix)) == 0;
+}
+
 #endif //LEDCONTROL_UTIL_H

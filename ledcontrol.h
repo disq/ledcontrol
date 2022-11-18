@@ -57,6 +57,12 @@ namespace ledcontrol {
         void enable_state(state_t p_state);
         state_t get_state();
 
+        // iot control helpers
+        const char* effect_to_str(EFFECT_MODE effect);
+        const char* speed_to_str(float_t speed);
+        float_t str_to_speed(const char *str);
+        int parse_effect_str(const char *str, EFFECT_MODE *effect, float_t *speed);
+
         // flashy things
         int load_state_from_flash();
         int save_state_to_flash();

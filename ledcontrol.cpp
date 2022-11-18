@@ -52,6 +52,64 @@ void LEDControl::cycle_loop(float hue, float t, float angle) {
   led_strip.show();
 }
 
+const char* LEDControl::effect_to_str(EFFECT_MODE effect) {
+  switch (effect) {
+    case EFFECT_MODE::HUE_CYCLE:
+      return "hue_cycle";
+    case EFFECT_MODE::WHITE_CHASE:
+      return "white_chase";
+    default:
+      return "";
+  }
+}
+
+const char* LEDControl::speed_to_str(float_t speed) {
+  if (speed == 0.0f) {
+    return "stopped";
+  } else if (speed < 0.02f) {
+    return "superslow";
+  } else if (speed < 0.06f) {
+      return "slow";
+  } else if (speed < 0.11f) {
+    return "medium";
+  } else {
+    return "fast";
+  }
+}
+
+float_t LEDControl::str_to_speed(const char *str) {
+  if (strcmp(str, "stopped") == 0) {
+    return 0.0f;
+  } else if (strcmp(str, "superslow") == 0) {
+    return 0.01f;
+  } else if (strcmp(str, "slow") == 0) {
+    return 0.05f;
+  } else if (strcmp(str, "medium") == 0) {
+    return 0.10f;
+  } else if (strcmp(str, "fast") == 0) {
+    return MAX_SPEED;
+  } else {
+    return DEFAULT_STATE.speed;
+  }
+}
+
+int LEDControl::parse_effect_str(const char *str, EFFECT_MODE *effect, float_t *speed) {
+  if (strstarts(str, "hue_cycle")) {
+    *effect = EFFECT_MODE::HUE_CYCLE;
+  } else if (strstarts(str, "white_chase")) {
+    *effect = EFFECT_MODE::WHITE_CHASE;
+  } else {
+    return -1;
+  }
+  int remaining_pos = strlen(effect_to_str(*effect));
+  if (str[remaining_pos] == ':') {
+    *speed = str_to_speed(str + remaining_pos + 1);
+    return 1;
+  }
+  return 0;
+}
+
+
 uint16_t LEDControl::get_paused_time() {
   return cycle ? 0 : millis() - stop_time;
 }

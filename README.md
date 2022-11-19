@@ -1,6 +1,6 @@
 # Pico LED Control
 
-Simple LED Control project for Raspberry Pi Pico and Pico W with MQTT.
+Simple LED Control project for Raspberry Pi Pico and Pico W with MQTT (and Home Assistant auto-discovery).
 
 ![image](./doc/cycle.gif) ![home assistant](./doc/ha-shot.png)
 
@@ -136,6 +136,15 @@ cmake ..
 
 #### Home Assistant Configuration
 
+The project supports Home Assistant MQTT Discovery. After it's connected to your MQTT broker it will publish a self-identifying message to the `homeassistant` topic under the `light` category.
+
+The default discovery MQTT prefix is `homeassistant/light/` and can be changed in `config_iot.h`.
+
+
+##### Manual Home Assistant Configuration
+
+If you don't have MQTT discovery enabled, manual configuration is as follows.
+
 - Add the following to your `configuration.yaml`:
 
 ```yaml
@@ -166,10 +175,12 @@ mqtt:
       optimistic: false
 ```
 
+`MQTT_ADD_BOARD_ID_TO_TOPIC` is enabled by default (in `config_iot.h`) so the final topic name will be different from the example above. To find out what it is, see [troubleshooting](#Troubleshooting).
+
 If using multiple Pico Ws using this code, you should:
 
 - Change `unique_id` to a unique value
-- Either define `MQTT_ADD_BOARD_ID_TO_TOPIC` in `config_iot.h`, or set different names for `MQTT_TOPIC_PREFIX` (or both). Update `state_topic` and `command_topic` in `configuration.yaml` accordingly.
+- Either define `MQTT_ADD_BOARD_ID_TO_TOPIC` in `config_iot.h` (on by default), or set different names for `MQTT_TOPIC_PREFIX` (or both). Update `state_topic` and `command_topic` in `configuration.yaml` accordingly.
 - Let me know if I missed something by [opening an issue](https://github.com/disq/ledcontrol/issues/new) ;-)
 
 

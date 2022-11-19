@@ -24,7 +24,7 @@ namespace ledcontrol {
         LEDControl();
 
         enum ENCODER_MODE : uint8_t {
-            OFF,
+            OFF = 0,
             COLOUR,
             ANGLE,
             BRIGHTNESS,
@@ -35,11 +35,13 @@ namespace ledcontrol {
         };
 
         enum EFFECT_MODE : uint8_t {
-            HUE_CYCLE,
+            HUE_CYCLE = 0,
             WHITE_CHASE,
 
             EFFECT_COUNT,
         };
+
+        static const uint8_t SPEED_COUNT = 5;
 
         // state of things
         typedef struct {
@@ -62,6 +64,8 @@ namespace ledcontrol {
         const char* speed_to_str(float_t speed);
         float_t str_to_speed(const char *str);
         int parse_effect_str(const char *str, EFFECT_MODE *effect, float_t *speed);
+        size_t get_effect_list(LEDControl::EFFECT_MODE *effects, size_t num_effects);
+        size_t get_speed_list(const char **speeds, size_t num_speeds);
 
         // flashy things
         int load_state_from_flash();
@@ -102,6 +106,19 @@ namespace ledcontrol {
         void encoder_loop();
         void set_encoder_state();
         void encoder_blink_off();
+
+        // strings
+        const char *effect_str[EFFECT_COUNT] = {
+            "hue_cycle",
+            "white_chase",
+        };
+        const char *speed_str[SPEED_COUNT] = {
+            "stopped",
+            "superslow",
+            "slow",
+            "medium",
+            "fast",
+        };
     };
 }
 

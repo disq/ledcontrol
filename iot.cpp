@@ -20,6 +20,9 @@ extern cyw43_t cyw43_state;
 
 IOT::IOT():
 global_state(NULL),
+state_topic{0},
+command_topic{0},
+config_topic{0},
 _connect_cb(NULL),
 _loop_cb(NULL) {
 }
@@ -28,6 +31,11 @@ int IOT::init(const char *ssid, const char *password, uint32_t authmode, void (*
   _loop_cb = loop_cb;
   _connect_cb = connect_cb;
   _command_cb = command_cb;
+
+  get_topic_name(state_topic, sizeof(state_topic), "", "");
+  get_topic_name(command_topic, sizeof(command_topic), "", "/set");
+  get_topic_name(config_topic, sizeof(config_topic), MQTT_HOME_ASSISTANT_DISCOVERY_PREFIX, "/config");
+  printf("[mqtt] state topic: %s\n[mqtt] command topic: %s\n[mqtt] config topic: %s\n", state_topic, command_topic, config_topic);
 
   cyw43_arch_enable_sta_mode();
 
@@ -154,19 +162,23 @@ const char* IOT::get_client_id() {
   return client_id;
 }
 
-const char* IOT::get_topic_prefix() {
-#ifndef MQTT_ADD_BOARD_ID_TO_TOPIC
-  return MQTT_TOPIC_PREFIX;
+void IOT::get_topic_name(char *buf, size_t buf_len, const char *prepend_str, const char *append_str) {
+  static char prefix[128] = {0};
+
+#ifdef MQTT_ADD_BOARD_ID_TO_TOPIC
+  if (prefix[0] == 0) {
+    pico_get_unique_board_id_string(prefix, sizeof(prefix));
+  }
 #endif
 
-  static char prefix[128] = {0};
-  if (prefix[0] != 0) {
-    return prefix;
-  }
-
-  strncpy(prefix, MQTT_TOPIC_PREFIX, sizeof(prefix));
-  pico_get_unique_board_id_string(&prefix[strlen(prefix)], sizeof(prefix) - strlen(prefix));
-  return prefix;
+  int l;
+  strncpy(buf, prepend_str, buf_len);
+  l = strlen(buf);
+  strncpy(&buf[l], MQTT_TOPIC_PREFIX, buf_len - l);
+  l = strlen(buf);
+  strncpy(&buf[l], prefix, buf_len - l);
+  l = strlen(buf);
+  strncpy(&buf[l], append_str, buf_len - l);
 }
 
 int IOT::mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *state) {
@@ -234,24 +246,39 @@ int IOT::mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *s
   return 0;
 }
 
-int IOT::topic_publish(const char *topicsuffix, const char *buffer) {
-  char topic[256] = {0};
-  strncpy(topic, get_topic_prefix(), sizeof(topic));
-  strncat(topic, topicsuffix, sizeof(topic) - strlen(topic));
+int IOT::publish_state(const char *buffer) {
+  u8_t qos = 2; // exactly once
+  u8_t retain = 1;
+  cyw43_arch_lwip_begin();
+  err_t err = mqtt_publish(global_state->mqtt_client, state_topic, buffer, strlen(buffer), qos, retain, _iot_mqtt_pub_request_cb, global_state);
+  cyw43_arch_lwip_end();
+
+  printf("[mqtt] publish_state: mqtt_publish to %s %s: %d\n", state_topic, err == ERR_OK ? "successful" : "failed", err);
+  return err == ERR_OK ? 0 : -1;
+}
+
+int IOT::publish_config(const char *effects) {
+  char buffer[2048] = {0};
+  snprintf(buffer, sizeof(buffer), "{\"board\": \"%s\", \"fw\":\"ledcontrol\", \"unique_id\":\"%s\", \"name\":\"%s\", "
+                                   "\"schema\":\"json\", \"dev_cla\":\"light\", "
+                                   "\"stat_t\":\"%s\", \"cmd_t\":\"%s\", \"brightness\":true, \"bri_scl\":100, "
+                                   "\"color_mode\":true, \"supported_color_modes\":[\"hs\"], "
+                                   "\"icon\":\"mdi:led-strip-variant\", \"opt\":false, "
+                                   "\"effect\":true, \"effect_list\":[%s]}",
+                                   PICO_BOARD,
+                                   get_client_id(), // use client_id as unique id
+                                   state_topic, // use state topic as device name
+                                   state_topic, command_topic, effects);
+  printf("msg to publish: %s\n", buffer);
 
   u8_t qos = 2; // exactly once
   u8_t retain = 1;
   cyw43_arch_lwip_begin();
-  err_t err = mqtt_publish(global_state->mqtt_client, topic, buffer, strlen(buffer), qos, retain, _iot_mqtt_pub_request_cb, global_state);
+  err_t err = mqtt_publish(global_state->mqtt_client, config_topic, buffer, strlen(buffer), qos, retain, _iot_mqtt_pub_request_cb, global_state);
   cyw43_arch_lwip_end();
 
-  if (err == ERR_OK) {
-    printf("[mqtt] mqtt_publish to %s successful.\n", topic);
-    return 0;
-  }
-
-  printf("[mqtt] mqtt_publish to %s failed: %d\n", topic, err);
-  return -1;
+  printf("[mqtt] publish_config: mqtt_publish to %s %s: %d\n", config_topic, err == ERR_OK ? "successful" : "failed", err);
+  return err == ERR_OK ? 0 : -1;
 }
 
 void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status) {
@@ -263,12 +290,10 @@ void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_
 
   mqtt_set_inpub_callback(client, _iot_mqtt_publish_data_cb, _iot_mqtt_incoming_data_cb, NULL);
 
-  char topic[256];
-  sprintf(topic, "%s/set", get_topic_prefix());
-  printf("[mqtt] subscribing to %s\n", topic);
-  err_t err = mqtt_subscribe(client, topic, 2, _iot_mqtt_sub_request_cb, NULL);
+  printf("[mqtt] subscribing to %s\n", command_topic);
+  err_t err = mqtt_subscribe(client, command_topic, 2, _iot_mqtt_sub_request_cb, NULL);
   if (err != ERR_OK) {
-    printf("[mqtt] mqtt_subscribe %s returned error: %d\n", topic, err);
+    printf("[mqtt] mqtt_subscribe %s returned error: %d\n", command_topic, err);
   }
 
   if (_connect_cb) _connect_cb();

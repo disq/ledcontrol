@@ -20,6 +20,7 @@ class IOT {
     } mqtt_wrapper_t;
 
     mqtt_wrapper_t *global_state;
+    char state_topic[256], command_topic[256], config_topic[256];
 
     void (*_connect_cb)();
     void (*_command_cb)(const char *data, size_t len);
@@ -30,6 +31,7 @@ class IOT {
     int mqtt_connect(ip_addr_t host_addr, uint16_t host_port, mqtt_wrapper_t *state);
     void mqtt_disconnect_and_free(mqtt_wrapper_t *state);
     int mqtt_fresh_state(const char *mqtt_host, uint16_t mqtt_port, mqtt_wrapper_t *state);
+    void get_topic_name(char *buf, size_t buf_len, const char *prepend_str, const char *append_str);
 
   public:
     IOT();
@@ -37,8 +39,8 @@ class IOT {
     int init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)(), void (*connect_cb)(), void (*command_cb)(const char *data, size_t len));
     int connect();
     const char* get_client_id();
-    const char* get_topic_prefix();
-    int topic_publish(const char *topicsuffix, const char *buffer);
+    int publish_state(const char *buffer);
+    int publish_config(const char *effects);
 
     // callbacks
     void _dns_found_cb(const char *name, const ip_addr_t *ipaddr, void *callback_arg);

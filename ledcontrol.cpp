@@ -53,40 +53,27 @@ void LEDControl::cycle_loop(float hue, float t, float angle) {
 }
 
 const char* LEDControl::effect_to_str(EFFECT_MODE effect) {
-  switch (effect) {
-    case EFFECT_MODE::HUE_CYCLE:
-      return "hue_cycle";
-    case EFFECT_MODE::WHITE_CHASE:
-      return "white_chase";
-    default:
-      return "";
-  }
+  return effect < EFFECT_COUNT ? effect_str[effect] : "";
 }
 
 const char* LEDControl::speed_to_str(float_t speed) {
-  if (speed == 0.0f) {
-    return "stopped";
-  } else if (speed < 0.02f) {
-    return "superslow";
-  } else if (speed < 0.06f) {
-      return "slow";
-  } else if (speed < 0.11f) {
-    return "medium";
-  } else {
-    return "fast";
-  }
+  if (speed == 0.0f) return speed_str[0];
+  if (speed < 0.02f) return speed_str[1];
+  if (speed < 0.06f) return speed_str[2];
+  if (speed < 0.11f) return speed_str[3];
+  return speed_str[SPEED_COUNT-1];
 }
 
 float_t LEDControl::str_to_speed(const char *str) {
-  if (strcmp(str, "stopped") == 0) {
+  if (strcmp(str, speed_str[0]) == 0) {
     return 0.0f;
-  } else if (strcmp(str, "superslow") == 0) {
+  } else if (strcmp(str, speed_str[1]) == 0) {
     return 0.01f;
-  } else if (strcmp(str, "slow") == 0) {
+  } else if (strcmp(str, speed_str[2]) == 0) {
     return 0.05f;
-  } else if (strcmp(str, "medium") == 0) {
+  } else if (strcmp(str, speed_str[3]) == 0) {
     return 0.10f;
-  } else if (strcmp(str, "fast") == 0) {
+  } else if (strcmp(str, speed_str[4]) == 0) {
     return MAX_SPEED;
   } else {
     return DEFAULT_STATE.speed;
@@ -94,14 +81,19 @@ float_t LEDControl::str_to_speed(const char *str) {
 }
 
 int LEDControl::parse_effect_str(const char *str, EFFECT_MODE *effect, float_t *speed) {
-  if (strstarts(str, "hue_cycle")) {
-    *effect = EFFECT_MODE::HUE_CYCLE;
-  } else if (strstarts(str, "white_chase")) {
-    *effect = EFFECT_MODE::WHITE_CHASE;
-  } else {
+  bool found = false;
+  for(uint8_t i = 0; i < EFFECT_COUNT; i++) {
+    if (strstarts(str, effect_str[i])) {
+      *effect = (EFFECT_MODE)i;
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
     return -1;
   }
-  int remaining_pos = strlen(effect_to_str(*effect));
+
+  size_t remaining_pos = strlen(effect_to_str(*effect));
   if (str[remaining_pos] == ':') {
     *speed = str_to_speed(str + remaining_pos + 1);
     return 1;
@@ -109,6 +101,22 @@ int LEDControl::parse_effect_str(const char *str, EFFECT_MODE *effect, float_t *
   return 0;
 }
 
+size_t LEDControl::get_effect_list(LEDControl::EFFECT_MODE *effects, size_t num_effects) {
+  size_t limit = 0;
+  effects[limit++] = EFFECT_MODE::HUE_CYCLE;
+  if (limit >= num_effects) return limit;
+  effects[limit++] = EFFECT_MODE::WHITE_CHASE;
+  return limit;
+}
+
+size_t LEDControl::get_speed_list(const char **speeds, size_t num_speeds) {
+  size_t limit = 0;
+  for(int i = 0; i < SPEED_COUNT; i++) {
+    speeds[limit++] = speed_str[i];
+    if (limit >= num_speeds) return limit;
+  }
+  return limit;
+}
 
 uint16_t LEDControl::get_paused_time() {
   return cycle ? 0 : millis() - stop_time;

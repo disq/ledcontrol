@@ -7,6 +7,7 @@
 #include "hardware/flash.h"
 #include "hardware/sync.h"
 #include <math.h>
+#include <cstring>
 #include "ledcontrol.h"
 #include "config.h"
 
@@ -45,7 +46,7 @@ void publish_state(ledcontrol::LEDControl::state_t state) {
           leds->speed_to_str(state.speed),
           state.on ? "ON" : "OFF"
           );
-  iot.topic_publish("", buffer);
+  iot.publish_state(buffer);
 }
 
 void on_state_change(ledcontrol::LEDControl::state_t new_state) {
@@ -154,6 +155,28 @@ void on_mqtt_connect() {
 
   auto cur_state = leds->get_state();
   publish_state(cur_state);
+
+  // calculate effect list
+  char buffer[2048] = {0};
+
+  LEDControl::EFFECT_MODE effs[16];
+  size_t num_effs = leds->get_effect_list(effs, sizeof(effs));
+  const char *speeds[16];
+  size_t num_speeds = leds->get_speed_list(speeds, sizeof(speeds));
+  for(size_t i = 0; i < num_effs; i++) {
+    for(size_t j = 0; j < num_speeds; j++) {
+      // give up and use strcat
+      if (i != 0 || j != 0) {
+        strcat(buffer, ",");
+      }
+      strcat(buffer, "\"");
+      strcat(buffer, leds->effect_to_str(effs[i]));
+      strcat(buffer, ":");
+      strcat(buffer, speeds[j]);
+      strcat(buffer, "\"");
+    }
+  }
+  iot.publish_config(buffer);
 }
 #endif
 

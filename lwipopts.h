@@ -11,6 +11,7 @@
 #undef MEM_SIZE
 #define MEM_SIZE 32768
 
+#define MQTT_OUTPUT_RINGBUF_SIZE 16384
 
 #define LWIP_ALTCP               1
 #define LWIP_ALTCP_TLS           1

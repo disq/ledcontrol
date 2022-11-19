@@ -57,6 +57,7 @@
 */
 
 // MQTT client id. Board id is appended to this string. Due to the 23 byte soft limit, recommended to keep it at (or under) 7 chars
+// This value is also used as part of the unique_id in MQTT discovery
 #define MQTT_CLIENT_ID "PicoW_"
 
 // MQTT username and password. If empty, don't #define and leave commented out
@@ -68,9 +69,18 @@
 #endif
 
 // Topic prefix, without the trailing slash
-#define MQTT_TOPIC_PREFIX "picow/ledcontrol"
-// Set this to add the board id to the topic prefix, so that a single firmware can be used for multiple boards
-//#define MQTT_ADD_BOARD_ID_TO_TOPIC
+#define MQTT_TOPIC_PREFIX "picow/ledcontrol" // if enabled, leave MQTT_HOME_ASSISTANT_DISCOVERY_PREFIX as set below
+//#define MQTT_TOPIC_PREFIX "homeassistant/light/picow/ledcontrol" // if enabled, set MQTT_HOME_ASSISTANT_DISCOVERY_PREFIX to empty string below
+
+// Disable this to remove board id from the topic prefix. Leave as-is if unsure so that every PicoW automatically gets its own unique id and topic.
+#define MQTT_ADD_BOARD_ID_TO_TOPIC
+
+// This prefix is required for Home Assistant autodiscovery to work. MQTT_TOPIC_PREFIX (and if enabled, board id) is
+// added to this before the string "/config". If you want your light to publish and read state under
+// "homeassistant/light/picow/ledcontrol" as well (and not just use the homeassistant prefix for autodiscovery) you
+// should set MQTT_TOPIC_PREFIX above to "homeassistant/light/picow/ledcontrol" and set this one to empty string.
+#define MQTT_HOME_ASSISTANT_DISCOVERY_PREFIX  "homeassistant/light/"
+//#define MQTT_HOME_ASSISTANT_DISCOVERY_PREFIX  ""
 
 // Country code. Optionally, enable and change according to your country. Full list in https://raspberrypi.github.io/pico-sdk-doxygen/cyw43__country_8h.html
 //#define WIFI_COUNTRY_CODE CYW43_COUNTRY_UK

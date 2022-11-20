@@ -31,7 +31,9 @@ const LEDControl::state_t DEFAULT_STATE = {
     // Default encoder mode we start at
     .mode = LEDControl::ENCODER_MODE::OFF,
 
+    // Leave these as-is unless you want funky starting values
     .on = true,
+    .stopped = false,
 };
 
 // More configuration

@@ -24,6 +24,7 @@ LEDControl::LEDControl():
     stop_time(0),
     led_strip(PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, PicoLed::FORMAT_WRGB)),
     button_b(pimoroni::Button(BUTTON_B_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
+    cycle_once(false),
     _on_state_change_cb(NULL)
 {
 }
@@ -134,6 +135,7 @@ void LEDControl::set_cycle(bool v) {
   }
 
   cycle = v;
+  if (state.stopped) return; // don't update LEDs if stopped on command
 
 #ifdef LED_PAUSED_PIN
   gpio_put(LED_PAUSED_PIN, !cycle);
@@ -237,16 +239,45 @@ void LEDControl::enable_state(state_t p_state) {
   p_state.brightness = std::min(MAX_BRIGHTNESS, std::max(MIN_BRIGHTNESS, p_state.brightness));
   if (p_state.effect < 0 || p_state.effect >= EFFECT_COUNT) p_state.effect = DEFAULT_STATE.effect;
 
+  bool change_cycle = false;
+  // fixme not reading p_state.stopped here but deciding if in stopped mode from speed
+  if (p_state.speed == 0.0f && state.speed != 0.0f) {
+    printf("[enable_state] enabling stopped mode\n");
+    p_state.stopped = true;
+    p_state.speed = state.speed; // keep it the same
+    change_cycle = true;
+  } else if (p_state.speed != 0.0f) {
+    printf("[enable_state] disabling stopped mode: new speed will be %f\n", p_state.speed);
+    p_state.stopped = false;
+    change_cycle = true;
+  }
+
+  if (p_state.effect != state.effect) cycle_once = true;
   state = p_state;
-  printf("[enable_state] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d\n", state.hue, state.angle, state.speed, state.brightness, state.mode, state.effect);
-  led_strip.setBrightness(get_effective_brightness());
-  led_strip.show();
+  if (change_cycle) set_cycle(!state.stopped);
+
+  log_state("enable_state", state);
+
+  // we do this to prevent flickering
+  static int16_t old_eff_brightness = -1;
+  uint8_t eff_brightness = get_effective_brightness();
+  if (old_eff_brightness == -1 || old_eff_brightness != eff_brightness) {
+    led_strip.setBrightness(eff_brightness);
+    old_eff_brightness = eff_brightness;
+    led_strip.show();
+  }
+
   set_encoder_state();
   if (_on_state_change_cb) _on_state_change_cb(state);
 }
 
 LEDControl::state_t LEDControl::get_state() {
   return state;
+}
+
+void LEDControl::log_state(const char *prefix, state_t s) {
+  printf("[%s] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d%s%s\n",
+         prefix, s.hue, s.angle, s.speed, s.brightness, s.mode, s.effect, s.stopped? " (stopped)":"", s.on? "":" (off)");
 }
 
 int LEDControl::load_state_from_flash() {
@@ -299,7 +330,7 @@ int LEDControl::save_state_to_flash() {
 }
 
 uint32_t LEDControl::loop() {
-  uint32_t t = pimoroni::millis() - start_time;
+  uint32_t t = millis() - start_time;
   if(enc->get_interrupt_flag()) {
     signed int count_raw = enc->read(); // Looks like -64 to +64, but we assume -10 to +10
     float_t count = std::min(10.0f, std::max(-10.0f, (float_t)count_raw))/50.0f; // Max increase can be 20% per update
@@ -318,6 +349,7 @@ uint32_t LEDControl::loop() {
         if (state.mode == ENCODER_MODE::OFF) break;
 
         set_cycle(state.mode == ENCODER_MODE::SPEED);
+        float_t old_speed;
 
         switch (state.mode) {
           default:
@@ -343,8 +375,15 @@ uint32_t LEDControl::loop() {
             break;
 
           case ENCODER_MODE::SPEED:
+            old_speed = state.speed;
             state.speed = std::min(MAX_SPEED, std::max(MIN_SPEED, state.speed + count));
-            printf("new speed: %f\n", state.speed);
+            if (state.speed == 0.0f && old_speed != 0.0f) {
+              state.speed = old_speed;
+              state.stopped = true;
+            } else if (state.speed != 0.0f) {
+              state.stopped = false;
+            }
+            printf("new speed: %f%s\n", state.speed, state.stopped?" (stopped)":"");
             break;
 
           case ENCODER_MODE::EFFECT:
@@ -362,7 +401,7 @@ uint32_t LEDControl::loop() {
           case ENCODER_MODE::COLOUR:
           case ENCODER_MODE::ANGLE:
           case ENCODER_MODE::EFFECT:
-            cycle_loop(state.hue, (float) (t - get_paused_time()) * state.speed, state.angle);
+            cycle_once = true;
             break;
         }
 
@@ -409,13 +448,16 @@ uint32_t LEDControl::loop() {
       set_encoder_state();
       if (!cycle) {
         set_cycle(true);
-        t = pimoroni::millis() - start_time;
-        printf("[cycle] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d\n", state.hue, state.angle, state.speed, state.brightness, state.mode, state.effect);
+        t = millis() - start_time;
+        log_state("cycle", state);
       }
     }
   }
 
-  if (cycle) cycle_loop(state.hue, (float) (t - get_paused_time()) * state.speed, state.angle);
+  if (cycle || cycle_once) {
+    cycle_loop(state.hue, (float) (t - get_paused_time()) * state.speed, state.angle);
+    cycle_once = false;
+  }
   if (menu_mode == MENU_MODE::MENU_ADJUST) encoder_loop();
   else encoder_blink_off();
 

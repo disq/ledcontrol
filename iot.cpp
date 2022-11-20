@@ -35,7 +35,6 @@ int IOT::init(const char *ssid, const char *password, uint32_t authmode, void (*
   get_topic_name(state_topic, sizeof(state_topic), "", "");
   get_topic_name(command_topic, sizeof(command_topic), "", "/set");
   get_topic_name(config_topic, sizeof(config_topic), MQTT_HOME_ASSISTANT_DISCOVERY_PREFIX, "/config");
-  printf("[mqtt] state topic: %s\n[mqtt] command topic: %s\n[mqtt] config topic: %s\n", state_topic, command_topic, config_topic);
 
   cyw43_arch_enable_sta_mode();
 
@@ -56,6 +55,7 @@ int IOT::init(const char *ssid, const char *password, uint32_t authmode, void (*
   }
 
   printf("[wifi] connected\n");
+  printf("[mqtt] state topic: %s\n[mqtt] command topic: %s\n[mqtt] config topic: %s\n", state_topic, command_topic, config_topic);
   return 0;
 }
 
@@ -253,7 +253,7 @@ int IOT::publish_state(const char *buffer) {
   err_t err = mqtt_publish(global_state->mqtt_client, state_topic, buffer, strlen(buffer), qos, retain, _iot_mqtt_pub_request_cb, global_state);
   cyw43_arch_lwip_end();
 
-  printf("[mqtt] publish_state: mqtt_publish to %s %s: %d\n", state_topic, err == ERR_OK ? "successful" : "failed", err);
+  if (err != ERR_OK) printf("[mqtt] publish_state: mqtt_publish to %s %s: %d\n", state_topic, err == ERR_OK ? "successful" : "failed", err);
   return err == ERR_OK ? 0 : -1;
 }
 
@@ -277,7 +277,7 @@ int IOT::publish_config(const char *effects) {
   err_t err = mqtt_publish(global_state->mqtt_client, config_topic, buffer, strlen(buffer), qos, retain, _iot_mqtt_pub_request_cb, global_state);
   cyw43_arch_lwip_end();
 
-  printf("[mqtt] publish_config: mqtt_publish to %s %s: %d\n", config_topic, err == ERR_OK ? "successful" : "failed", err);
+  if (err != ERR_OK) printf("[mqtt] publish_config: mqtt_publish to %s %s: %d\n", config_topic, err == ERR_OK ? "successful" : "failed", err);
   return err == ERR_OK ? 0 : -1;
 }
 
@@ -301,7 +301,7 @@ void IOT::_mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_
 
 void IOT::_mqtt_pub_request_cb(void *arg, err_t err) {
   if (err == ERR_OK) {
-    printf("[mqtt] (cb) publish successful\n");
+//    printf("[mqtt] (cb) publish successful\n");
   } else {
     printf("[mqtt] (cb) publish failed: %d\n", err);
   }
@@ -309,19 +309,19 @@ void IOT::_mqtt_pub_request_cb(void *arg, err_t err) {
 
 void IOT::_mqtt_sub_request_cb(void *arg, err_t err) {
   if (err == ERR_OK) {
-    printf("[mqtt] (cb) subscribe successful\n");
+//    printf("[mqtt] (cb) subscribe successful\n");
   } else {
     printf("[mqtt] (cb) subscribe failed: %d\n", err);
   }
 }
 
 void IOT::_mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
-  printf("[mqtt] (cb) incoming data (len:%d, flags:%x): %.*s\n", len, flags, len, (const char*)data);
+//  printf("[mqtt] (cb) incoming data (len:%d, flags:%x): %.*s\n", len, flags, len, (const char*)data);
   if (_command_cb) _command_cb((const char*)data, (size_t)len);
 }
 
 void IOT::_mqtt_publish_data_cb(void *arg, const char *topic, u32_t tot_len) {
-  printf("[mqtt] (cb) publish data on topic: %s (length: %d)\n", topic, tot_len);
+//  printf("[mqtt] (cb) publish data on topic: %s (length: %d)\n", topic, tot_len);
 }
 
 IOT iot;

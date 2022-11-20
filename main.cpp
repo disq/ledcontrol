@@ -43,16 +43,14 @@ void publish_state(ledcontrol::LEDControl::state_t state) {
   snprintf(buffer, sizeof(buffer), "{\"brightness\": %d, \"color_mode\":\"hs\", \"color\": {\"h\": %d, \"s\": %d}, \"effect\":\"%s:%s\", \"state\":\"%s\"}",
           (int)(state.brightness * 100.0f), (int)(state.hue * 360.0f), (int)(state.angle * 100),
           leds->effect_to_str(state.effect),
-          leds->speed_to_str(state.speed),
+          leds->speed_to_str(state.stopped ? 0.0f : state.speed),
           state.on ? "ON" : "OFF"
           );
   iot.publish_state(buffer);
 }
 
 void on_state_change(ledcontrol::LEDControl::state_t new_state) {
-  printf("[on_state_change] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d\n", new_state.hue,
-         new_state.angle, new_state.speed, new_state.brightness, new_state.mode, new_state.effect);
-
+  leds->log_state("on_state_change", new_state);
   publish_state(new_state);
 }
 
@@ -103,8 +101,9 @@ void on_command(const char *data, size_t len) {
           state.effect = eff;
           changed = true;
         }
-        if (res == 1 && state.speed != speed) {
+        if (res == 1 && (state.speed != speed || state.stopped)) {
           state.speed = speed;
+//          state.stopped = speed == 0.0f; // not needed as we calculate it in enable_state anyway
           changed = true;
         }
       }

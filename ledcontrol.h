@@ -52,12 +52,14 @@ namespace ledcontrol {
             enum EFFECT_MODE effect;
             enum ENCODER_MODE mode;
             bool on;
+            bool stopped; // if we're not cycling (effective speed is 0)
         } state_t;
 
         void init(Encoder *e);
         uint32_t loop(); // returns: required sleep value in ms
         void enable_state(state_t p_state);
         state_t get_state();
+        void log_state(const char *prefix, state_t s);
 
         // iot control helpers
         const char* effect_to_str(EFFECT_MODE effect);
@@ -86,7 +88,7 @@ namespace ledcontrol {
         Encoder *enc = nullptr;
 
         enum MENU_MODE menu_mode;
-        bool cycle{};
+        bool cycle{}, cycle_once{};
 
         const char flash_save_magic[8] = "LEDCTRL";
         typedef struct {

@@ -69,7 +69,7 @@ int IOT::connect() {
   }
   global_state = state;
 
-  // not supporting polling mode here for now
+  // caller should do cyw43_arch_poll() in a loop if using pico_cyw43_arch_lwip_poll
 
   return 0;
 }

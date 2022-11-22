@@ -75,8 +75,8 @@ if ((PICO_CYW43_SUPPORTED) AND (TARGET pico_cyw43_arch)) # set by BOARD=pico-w
         )
 
     target_link_libraries(${NAME}
-#            pico_cyw43_arch_lwip_poll
-            pico_cyw43_arch_lwip_threadsafe_background
+            pico_cyw43_arch_lwip_poll
+#            pico_cyw43_arch_lwip_threadsafe_background
             pico_lwip_mbedtls
             pico_mbedtls
             pico_lwip_mqtt

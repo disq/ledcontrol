@@ -229,6 +229,10 @@ int main() {
 #endif
 
   while(true) {
+#if PICO_CYW43_ARCH_POLL
+    cyw43_arch_poll();
+    sleep_ms(1);
+#endif
     sleep_ms(leds->loop());
   }
 }

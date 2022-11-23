@@ -11,6 +11,10 @@ using namespace ledcontrol;
 // Adjust according to the number of LEDs you have
 const uint NUM_LEDS = 151;
 
+// This should be PicoLed::FORMAT_RGB, PicoLed::FORMAT_GRB or PicoLed::FORMAT_WRGB depending on the LED strip you use
+#define LED_FORMAT PicoLed::FORMAT_WRGB
+//#define LED_FORMAT PicoLed::FORMAT_GRB
+
 // Defaults... floats are between 0 and 1.0f
 const LEDControl::state_t DEFAULT_STATE = {
     // Hue the LEDs will start at. 1.0f = 360 degrees

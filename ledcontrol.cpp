@@ -22,7 +22,7 @@ LEDControl::LEDControl():
     encoder_blink_state(false),
     start_time(0),
     stop_time(0),
-    led_strip(PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, PicoLed::FORMAT_WRGB)),
+    led_strip(PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, LED_FORMAT)),
     button_b(pimoroni::Button(BUTTON_B_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
     cycle_once(false),
     _on_state_change_cb(NULL)
@@ -35,10 +35,13 @@ void LEDControl::cycle_loop(float hue, float t, float angle) {
 
   t /= 200.0f;
 
+  static bool use_white = (LED_FORMAT) == PicoLed::FORMAT_WRGB;
+
   for(auto i = 0u; i < led_strip.getNumLeds(); ++i) {
     float percent_along = (float)i / led_strip.getNumLeds();
     float offset = sinf((percent_along + 0.5f + t) * M_PI) * angle_deg;
     float h = wrap((hue_deg + offset) / 360.0f, 0.0f, 1.0f);
+    uint8_t white;
 
     switch(state.effect) {
       case EFFECT_MODE::HUE_CYCLE:
@@ -46,7 +49,8 @@ void LEDControl::cycle_loop(float hue, float t, float angle) {
         led_strip.setPixelColor(i, PicoLed::HSV(uint8_t(h*255.0f), 255.0f, 255.0f));
         break;
       case EFFECT_MODE::WHITE_CHASE:
-        led_strip.setPixelColor(i, PicoLed::RGBW(0, 0, 0, uint8_t((1.0f - h)*255.0f)));
+        white = uint8_t((1.0f - h) * 255.0f);
+        led_strip.setPixelColor(i, use_white ? PicoLed::RGBW(0, 0, 0, white) : PicoLed::RGB(white, white, white));
         break;
     }
   }

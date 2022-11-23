@@ -244,19 +244,23 @@ void LEDControl::enable_state(state_t p_state) {
   if (p_state.effect < 0 || p_state.effect >= EFFECT_COUNT) p_state.effect = DEFAULT_STATE.effect;
 
   bool change_cycle = false;
-  // fixme not reading p_state.stopped here but deciding if in stopped mode from speed
-  if (p_state.speed == 0.0f && state.speed != 0.0f) {
-    printf("[enable_state] enabling stopped mode\n");
+  if (p_state.stopped) p_state.speed = 0.0f;
+  if (p_state.speed == 0.0f) {
+    if (state.speed != 0.0f) {
+      printf("[enable_state] enabling stopped mode\n");
+      p_state.speed = state.speed; // keep it the same
+      change_cycle = true;
+    } else {
+      printf("[enable_state] already in stopped mode\n");
+    }
     p_state.stopped = true;
-    p_state.speed = state.speed; // keep it the same
-    change_cycle = true;
-  } else if (p_state.speed != 0.0f) {
+  } else {
     printf("[enable_state] disabling stopped mode: new speed will be %f\n", p_state.speed);
     p_state.stopped = false;
     change_cycle = true;
   }
 
-  if (p_state.effect != state.effect) cycle_once = true;
+  if (p_state.hue != state.hue || p_state.angle != state.angle || p_state.effect != state.effect) cycle_once = true;
   state = p_state;
   if (change_cycle) set_cycle(!state.stopped);
 

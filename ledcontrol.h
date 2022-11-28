@@ -81,6 +81,9 @@ namespace ledcontrol {
         bool encoder_blink_state;
         uint32_t encoder_last_activity;
         uint32_t start_time, stop_time;
+        uint32_t transition_start_time;
+        uint32_t transition_duration;
+        float_t transition_start_brightness;
         PicoLed::PicoLedController led_strip;
         pimoroni::Button button_b;
         pimoroni::Button button_c;
@@ -102,6 +105,7 @@ namespace ledcontrol {
         void cycle_loop(float hue, float t, float angle);
         uint16_t get_paused_time();
         uint8_t get_effective_brightness();
+        bool transition_loop(bool force);
         void set_cycle(bool v);
         uint32_t encoder_colour_by_mode(ENCODER_MODE mode);
         void encoder_loop();

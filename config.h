@@ -57,14 +57,16 @@ const uint LED_DATA_PIN = 28;
 const uint BUTTON_B_PIN = 27;
 const uint BUTTON_C_PIN = 26;
 
+const uint16_t FADE_IN_DURATION = 1000; // ms
+const uint16_t FADE_OUT_DURATION = 2000; // ms
+const uint16_t ENCODER_INACTIVITY_TIMEOUT = 10000; // ms. after 10 seconds, encoder will switch to off mode and encoder LED will turn off
+
 #define ROT_A 16 // rotary A (leftmost pin in rotary)
 #define ROT_B 17 // rotary B (rightmost pin in rotary)
 #define ROT_LEDR 18 // red LED
 #define ROT_LEDG 19 // green LED
 #define ROT_SW 20 // rotary pushbutton
 #define ROT_LEDB 21 // blue LED
-
-#define ENCODER_INACTIVITY_TIMEOUT 10000 // after 10 seconds, encoder will switch to off mode and encoder LED will turn off
 
 #ifndef RASPBERRYPI_PICO_W
 #define LED_PAUSED_PIN PICO_DEFAULT_LED_PIN

@@ -23,6 +23,9 @@ LEDControl::LEDControl():
     encoder_last_activity(0),
     start_time(0),
     stop_time(0),
+    transition_start_time(0),
+    transition_duration(0),
+    transition_start_brightness(0),
     led_strip(PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, LED_FORMAT)),
     button_b(pimoroni::Button(BUTTON_B_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
     button_c(pimoroni::Button(BUTTON_C_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
@@ -31,6 +34,7 @@ LEDControl::LEDControl():
 {
 }
 
+// call led_strip.show() after this
 void LEDControl::cycle_loop(float hue, float t, float angle) {
   auto hue_deg = hue * 360.0f;
   auto angle_deg = angle * 360.0f;
@@ -56,7 +60,6 @@ void LEDControl::cycle_loop(float hue, float t, float angle) {
         break;
     }
   }
-  led_strip.show();
 }
 
 const char* LEDControl::effect_to_str(EFFECT_MODE effect) {
@@ -232,9 +235,23 @@ void LEDControl::init(Encoder *e) {
 }
 
 uint8_t LEDControl::get_effective_brightness() {
-  if (!state.on) return 0;
+  if (transition_start_time == 0) {
+    transition_start_brightness = state.on ? state.brightness : 0;
+    return (uint8_t)(transition_start_brightness*BRIGHTNESS_SCALE);
+  }
 
-  return (uint8_t)(state.brightness*BRIGHTNESS_SCALE);
+  auto ts = millis();
+  if (ts < transition_start_time || ts > transition_start_time+transition_duration) {
+    transition_start_time = 0;
+    return get_effective_brightness();
+  }
+
+  // sinusoidal transition
+  float_t t = (float_t)(ts-transition_start_time) / (float_t)transition_duration;
+  float_t target_brightness = state.on ? state.brightness : 0;
+
+  float b = (1.0f-cosf(t*M_PI))/2.0f;
+  return (uint8_t)((transition_start_brightness + b*(target_brightness-transition_start_brightness))*BRIGHTNESS_SCALE);
 }
 
 void LEDControl::enable_state(state_t p_state) {
@@ -263,10 +280,27 @@ void LEDControl::enable_state(state_t p_state) {
   }
 
   if (p_state.hue != state.hue || p_state.angle != state.angle || p_state.effect != state.effect) cycle_once = true;
+
+  if (p_state.on != state.on) {
+    // fade in-out
+    transition_start_time = millis();
+    transition_duration = p_state.on ? FADE_IN_DURATION : FADE_OUT_DURATION;
+  }
+
   state = p_state;
+
   if (change_cycle) set_cycle(!state.stopped);
 
   log_state("enable_state", state);
+
+  if (transition_loop(true)) led_strip.show();
+
+  set_encoder_state();
+  if (_on_state_change_cb) _on_state_change_cb(state);
+}
+
+bool LEDControl::transition_loop(bool force) {
+  if (!force && transition_start_time == 0) return false;
 
   // we do this to prevent flickering
   static int16_t old_eff_brightness = -1;
@@ -274,11 +308,10 @@ void LEDControl::enable_state(state_t p_state) {
   if (old_eff_brightness == -1 || old_eff_brightness != eff_brightness) {
     led_strip.setBrightness(eff_brightness);
     old_eff_brightness = eff_brightness;
-    led_strip.show();
+    return true; // changed, need to call led_strip.show()
   }
 
-  set_encoder_state();
-  if (_on_state_change_cb) _on_state_change_cb(state);
+  return false;
 }
 
 LEDControl::state_t LEDControl::get_state() {
@@ -475,8 +508,7 @@ uint32_t LEDControl::loop() {
     set_encoder_state();
   }
 
-#if ENCODER_INACTIVITY_TIMEOUT > 0
-  if (state.mode != ENCODER_MODE::OFF && encoder_last_activity > 0 && millis() - encoder_last_activity > ENCODER_INACTIVITY_TIMEOUT) {
+  if (ENCODER_INACTIVITY_TIMEOUT>0 && state.mode != ENCODER_MODE::OFF && encoder_last_activity > 0 && millis() - encoder_last_activity > ENCODER_INACTIVITY_TIMEOUT) {
     printf("[menu] encoder inactivity, switching to off mode\n");
     encoder_last_activity = 0;
     menu_mode = MENU_MODE::MENU_SELECT;
@@ -484,7 +516,6 @@ uint32_t LEDControl::loop() {
     set_encoder_state();
     if (!cycle) resume_cycle = true;
   }
-#endif
 
   if (resume_cycle) {
     set_cycle(true);
@@ -492,10 +523,19 @@ uint32_t LEDControl::loop() {
     log_state("cycle", state);
   }
 
+  bool need_refresh = false;
   if (cycle || cycle_once) {
     cycle_loop(state.hue, (float) (t - get_paused_time()) * state.speed, state.angle);
     cycle_once = false;
+    need_refresh = true;
   }
+
+  need_refresh |= transition_loop(false);
+
+  if (need_refresh) {
+    led_strip.show();
+  }
+
   if (menu_mode == MENU_MODE::MENU_ADJUST) encoder_loop();
   else encoder_blink_off();
 

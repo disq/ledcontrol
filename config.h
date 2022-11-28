@@ -63,6 +63,8 @@ const uint BUTTON_B_PIN = 27;
 #define ROT_SW 20 // rotary pushbutton
 #define ROT_LEDB 21 // blue LED
 
+#define ENCODER_INACTIVITY_TIMEOUT 10000 // after 10 seconds, encoder will switch to off mode and encoder LED will turn off
+
 #ifndef RASPBERRYPI_PICO_W
 #define LED_PAUSED_PIN PICO_DEFAULT_LED_PIN
 #define BOARD_LED_PIN PICO_DEFAULT_LED_PIN

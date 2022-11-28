@@ -20,6 +20,7 @@ LEDControl::LEDControl():
     state(DEFAULT_STATE),
     encoder_last_blink(0),
     encoder_blink_state(false),
+    encoder_last_activity(0),
     start_time(0),
     stop_time(0),
     led_strip(PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, LED_FORMAT)),
@@ -345,6 +346,7 @@ uint32_t LEDControl::loop() {
     printf("[encoder] count: %d (%f)\n", count_raw, count);
     enc->clear_interrupt_flag();
     enc->clear();
+    encoder_last_activity = millis();
 
     switch(menu_mode) {
       default:
@@ -415,14 +417,17 @@ uint32_t LEDControl::loop() {
 
         if (_on_state_change_cb) _on_state_change_cb(state);
     }
-  }
+  } // get_interrupt_flag
 
   auto b_val = wait_for_long_button(button_b, 1500);
   bool b_pressed = b_val == 1;
   bool b_held = b_val == 2;
 
   bool a_pressed = enc->get_clicked();
-  if (a_pressed) enc->clear_clicked();
+  if (a_pressed) {
+    enc->clear_clicked();
+    encoder_last_activity = millis();
+  }
 
   if (b_pressed || b_held) {
     printf("[button] B pressed:%d held:%d\n", b_pressed, b_held);
@@ -446,20 +451,33 @@ uint32_t LEDControl::loop() {
     set_cycle(true);
   }
 
+  bool resume_cycle = false;
   if (a_pressed) {
     if (state.mode == ENCODER_MODE::OFF) { // If we're off, switch to first mode
       state.mode = ENCODER_MODE::COLOUR;
-      set_encoder_state();
     } else {
       menu_mode = (MENU_MODE)(((int) menu_mode + 1) % (int) MENU_MODE::MENU_COUNT);
       printf("[menu] new menu selection: %d\n", menu_mode);
-      set_encoder_state();
-      if (!cycle) {
-        set_cycle(true);
-        t = millis() - start_time;
-        log_state("cycle", state);
-      }
+      if (!cycle) resume_cycle = true;
     }
+    set_encoder_state();
+  }
+
+#if ENCODER_INACTIVITY_TIMEOUT > 0
+  if (state.mode != ENCODER_MODE::OFF && encoder_last_activity > 0 && millis() - encoder_last_activity > ENCODER_INACTIVITY_TIMEOUT) {
+    printf("[menu] encoder inactivity, switching to off mode\n");
+    encoder_last_activity = 0;
+    menu_mode = MENU_MODE::MENU_SELECT;
+    state.mode = ENCODER_MODE::OFF;
+    set_encoder_state();
+    if (!cycle) resume_cycle = true;
+  }
+#endif
+
+  if (resume_cycle) {
+    set_cycle(true);
+    t = millis() - start_time;
+    log_state("cycle", state);
   }
 
   if (cycle || cycle_once) {

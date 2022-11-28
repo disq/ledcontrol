@@ -75,13 +75,11 @@ namespace ledcontrol {
 
         void set_on_state_change_cb(void (*cb)(state_t new_state)) { _on_state_change_cb = cb; }
 
-        void _enc_switch_cb(bool val);
-        void _enc_rotate_cb(signed int counter);
-
       private:
         state_t state;
         uint32_t encoder_last_blink;
         bool encoder_blink_state;
+        uint32_t encoder_last_activity;
         uint32_t start_time, stop_time;
         PicoLed::PicoLedController led_strip;
         pimoroni::Button button_b;

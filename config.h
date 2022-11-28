@@ -55,6 +55,7 @@ const float_t ENC_DEFAULT_BRIGHTNESS = 0.5f;
 // See connections section in README
 const uint LED_DATA_PIN = 28;
 const uint BUTTON_B_PIN = 27;
+const uint BUTTON_C_PIN = 26;
 
 #define ROT_A 16 // rotary A (leftmost pin in rotary)
 #define ROT_B 17 // rotary B (rightmost pin in rotary)

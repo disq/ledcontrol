@@ -25,6 +25,7 @@ LEDControl::LEDControl():
     stop_time(0),
     led_strip(PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, LED_FORMAT)),
     button_b(pimoroni::Button(BUTTON_B_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
+    button_c(pimoroni::Button(BUTTON_C_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
     cycle_once(false),
     _on_state_change_cb(NULL)
 {
@@ -449,6 +450,17 @@ uint32_t LEDControl::loop() {
     enable_state(DEFAULT_STATE);
     menu_mode = MENU_MODE::MENU_SELECT;
     set_cycle(true);
+  }
+
+  if (button_c.read()) {
+    printf("C pressed! toggling on/off to %d\n", (int)(!state.on));
+
+    menu_mode = MENU_MODE::MENU_SELECT;
+    state.mode = ENCODER_MODE::OFF;
+
+    state_t new_state = state;
+    new_state.on = !state.on;
+    enable_state(new_state);
   }
 
   bool resume_cycle = false;

@@ -83,6 +83,7 @@ namespace ledcontrol {
         uint32_t start_time, stop_time;
         PicoLed::PicoLedController led_strip;
         pimoroni::Button button_b;
+        pimoroni::Button button_c;
         Encoder *enc = nullptr;
 
         enum MENU_MODE menu_mode;

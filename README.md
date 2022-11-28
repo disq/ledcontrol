@@ -19,7 +19,8 @@ Simple LED Control project for Raspberry Pi Pico and Pico W with MQTT (and Home 
 - Raspberry Pi [Pico](https://shop.pimoroni.com/products/raspberry-pi-pico) or [Pico W](https://shop.pimoroni.com/products/raspberry-pi-pico-w)
 - A WS2812/SK6812 [LED strip](https://shop.pimoroni.com/collections/components?tags=LED%20Strip) or a bunch of [NeoPixels](https://www.adafruit.com/category/168)
 - Optional: Sparkfun [RGB Rotary Encoder](https://shop.pimoroni.com/products/rotary-encoder-illuminated-rgb) with built-in push button, and optionally the [breakout](https://shop.pimoroni.com/products/sparkfun-rotary-encoder-breakout-illuminated-rg-rgb)
-- Optional: An extra button if you want to load/save your colour schemes.
+- Optional: An extra button (button "B") if you want to load/save your colour schemes.
+- Optional: Another extra button (let's call this "C") if you want an instant on/off button.
 - Optional: [Captain Resetti](https://shop.pimoroni.com/products/captain-resetti-pico-reset-button) to return to default colours, or just replug the board.
 - Read [the uberguide](https://learn.adafruit.com/adafruit-neopixel-uberguide) if you haven't...
 
@@ -34,6 +35,7 @@ Only a single (right) side of the Pico is used for connections to allow for crea
   - Rotary encoder: A to `GP16`, B to `GP17`, C to `GND` (Pin 23)
   - SW to `GP20`
 - Optional: Button "B" to `GP27`. Connect the other end of the button to any `GND` pin.
+- Optional: Button "C" to `GP26`. Connect the other end of the button to any `GND` pin.
 
 Pinout diagram is [here](./doc/pinout.png) or [from the back](./doc/pinout-back.png) (courtesy of [pinout.xyz](https://pico.pinout.xyz/))
 
@@ -44,6 +46,7 @@ Pinout diagram is [here](./doc/pinout.png) or [from the back](./doc/pinout-back.
 - Button "B" resets effects to default settings. You could also reset the Pico to achieve the same effect.
 - Board LED is lit when cycling is stopped.
 - Hold button "B" for 2 seconds to save current settings to flash. These will be loaded on boot, and will be used as default settings.
+- Button "C" to turn LEDs on/off quickly.
 
 ### Explanation
 

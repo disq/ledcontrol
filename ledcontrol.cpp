@@ -32,6 +32,7 @@ LEDControl::LEDControl():
     cycle_once(false),
     _on_state_change_cb(NULL)
 {
+  state.on = false; // so that we can turn it on with a transition
 }
 
 // call led_strip.show() after this

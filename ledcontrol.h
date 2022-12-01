@@ -80,6 +80,7 @@ namespace ledcontrol {
         uint32_t encoder_last_blink;
         bool encoder_blink_state;
         uint32_t encoder_last_activity;
+        uint32_t global_last_activity;
         uint32_t start_time, stop_time;
         uint32_t transition_start_time;
         uint32_t transition_duration;

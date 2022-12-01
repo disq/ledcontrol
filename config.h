@@ -60,6 +60,8 @@ const uint BUTTON_C_PIN = 26;
 const uint16_t FADE_IN_DURATION = 1000; // ms
 const uint16_t FADE_OUT_DURATION = 2000; // ms
 const uint16_t ENCODER_INACTIVITY_TIMEOUT = 10000; // ms. after 10 seconds, encoder will switch to off mode and encoder LED will turn off
+const uint16_t GLOBAL_INACTIVITY_TIMEOUT_SECS = 0; // ms. after 1 hour (3600) seconds of inactivity, LEDs will turn off. Set to 0 to disable.
+//const uint16_t GLOBAL_INACTIVITY_TIMEOUT_SECS = 3600; // ms. after 1 hour (3600) seconds of inactivity, LEDs will turn off. Set to 0 to disable.
 
 #define ROT_A 16 // rotary A (leftmost pin in rotary)
 #define ROT_B 17 // rotary B (rightmost pin in rotary)

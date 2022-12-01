@@ -21,6 +21,7 @@ LEDControl::LEDControl():
     encoder_last_blink(0),
     encoder_blink_state(false),
     encoder_last_activity(0),
+    global_last_activity(0),
     start_time(0),
     stop_time(0),
     transition_start_time(0),
@@ -297,6 +298,7 @@ void LEDControl::enable_state(state_t p_state) {
   if (transition_loop(true)) led_strip.show();
 
   set_encoder_state();
+  global_last_activity = millis();
   if (_on_state_change_cb) _on_state_change_cb(state);
 }
 
@@ -382,6 +384,7 @@ uint32_t LEDControl::loop() {
     enc->clear_interrupt_flag();
     enc->clear();
     encoder_last_activity = millis();
+    global_last_activity = encoder_last_activity;
 
     switch(menu_mode) {
       default:
@@ -394,63 +397,51 @@ uint32_t LEDControl::loop() {
         if (state.mode == ENCODER_MODE::OFF) break;
 
         set_cycle(state.mode == ENCODER_MODE::SPEED);
-        float_t old_speed;
 
+        auto new_state = state;
         switch (state.mode) {
           default:
           case ENCODER_MODE::OFF: // not possible due to if above
             break;
 
           case ENCODER_MODE::COLOUR:
-            state.hue = wrap(state.hue + count, 0.0f, 1.0f);
+            new_state.hue = wrap(state.hue + count, 0.0f, 1.0f);
             printf("new hue start angle: %f\n", state.hue);
             break;
 
           case ENCODER_MODE::ANGLE:
-            state.angle = std::min(1.0f, std::max(0.0f, state.angle + count));
+            new_state.angle = std::min(1.0f, std::max(0.0f, state.angle + count));
             printf("new hue end angle: %f\n", state.angle);
             break;
 
           case ENCODER_MODE::BRIGHTNESS:
-            state.brightness = std::min(MAX_BRIGHTNESS, std::max(MIN_BRIGHTNESS, state.brightness + count));
-            printf("new brightness: %f\n", state.brightness);
+            new_state.brightness = std::min(MAX_BRIGHTNESS, std::max(MIN_BRIGHTNESS, state.brightness + count));
+            printf("new brightness: %f\n", new_state.brightness);
             led_strip.setBrightness(get_effective_brightness());
-            enc->set_brightness(state.brightness);
+            enc->set_brightness(new_state.brightness);
             led_strip.show();
             break;
 
           case ENCODER_MODE::SPEED:
-            old_speed = state.speed;
-            state.speed = std::min(MAX_SPEED, std::max(MIN_SPEED, state.speed + count));
-            if (state.speed == 0.0f && old_speed != 0.0f) {
-              state.speed = old_speed;
-              state.stopped = true;
-            } else if (state.speed != 0.0f) {
-              state.stopped = false;
+            new_state.speed = std::min(MAX_SPEED, std::max(MIN_SPEED, state.speed + count));
+            if (new_state.speed == 0.0f && state.speed != 0.0f) {
+              new_state.speed = state.speed;
+              new_state.stopped = true;
+            } else if (new_state.speed != 0.0f) {
+              new_state.stopped = false;
             }
-            printf("new speed: %f%s\n", state.speed, state.stopped?" (stopped)":"");
+            printf("new speed: %f%s\n", new_state.speed, new_state.stopped?" (stopped)":"");
             break;
 
           case ENCODER_MODE::EFFECT:
-            state.effect = (EFFECT_MODE)limiting_wrap(state.effect + (count < 0.0 ? -1 : 1), 0, EFFECT_MODE::EFFECT_COUNT);
+            new_state.effect = (EFFECT_MODE)limiting_wrap(state.effect + (count < 0.0 ? -1 : 1), 0, EFFECT_MODE::EFFECT_COUNT);
 
             printf("new effect: %d\n", state.effect);
             break;
         }
 
-        state.on = true; // always set to on if there is a change
-
-        switch (state.mode) {
-          default:
-            break;
-          case ENCODER_MODE::COLOUR:
-          case ENCODER_MODE::ANGLE:
-          case ENCODER_MODE::EFFECT:
-            cycle_once = true;
-            break;
-        }
-
-        if (_on_state_change_cb) _on_state_change_cb(state);
+        new_state.on = true; // always set to on if there is a change
+        enable_state(new_state);
     }
   } // get_interrupt_flag
 
@@ -462,6 +453,7 @@ uint32_t LEDControl::loop() {
   if (a_pressed) {
     enc->clear_clicked();
     encoder_last_activity = millis();
+    global_last_activity = encoder_last_activity;
   }
 
   if (b_pressed || b_held) {
@@ -477,6 +469,7 @@ uint32_t LEDControl::loop() {
 
     led_strip.setBrightness(get_effective_brightness());
     led_strip.show();
+    global_last_activity = millis();
   }
 
   if(b_pressed) {
@@ -532,6 +525,14 @@ uint32_t LEDControl::loop() {
   }
 
   need_refresh |= transition_loop(false);
+
+  if (global_last_activity > 0 && GLOBAL_INACTIVITY_TIMEOUT_SECS > 0 && millis() - global_last_activity > GLOBAL_INACTIVITY_TIMEOUT_SECS * 1000 && state.on) {
+    printf("[menu] global inactivity, turning off\n");
+    global_last_activity = 0;
+    auto p_state = state;
+    p_state.on = false;
+    enable_state(p_state);
+  }
 
   if (need_refresh) {
     led_strip.show();

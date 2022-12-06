@@ -10,7 +10,6 @@
 #include "hardware/flash.h"
 #include "hardware/sync.h"
 
-#include "ledcontrol.h"
 #include "util.h"
 #include "config.h"
 
@@ -27,7 +26,7 @@ LEDControl::LEDControl():
     transition_start_time(0),
     transition_duration(0),
     transition_start_brightness(0),
-    led_strip(PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_DATA_PIN, NUM_LEDS, LED_FORMAT)),
+    led_strip(NUM_LEDS, pio0, 0, LED_DATA_PIN, plasma::WS2812::DEFAULT_SERIAL_FREQ, LED_RGBW, LED_ORDER),
     button_b(pimoroni::Button(BUTTON_B_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
     button_c(pimoroni::Button(BUTTON_C_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
     cycle_once(false),
@@ -36,17 +35,31 @@ LEDControl::LEDControl():
   state.on = false; // so that we can turn it on with a transition
 }
 
-// call led_strip.show() after this
-void LEDControl::cycle_loop(float hue, float t, float angle) {
+void LEDControl::set_brightness(float_t brightness) {
+  eff_brightness = brightness;;
+  cycle_loop(0, 0, 0, true);
+}
+
+// call led_strip.update() after this?
+void LEDControl::cycle_loop(float hue, float t, float angle, bool refresh) {
+  static float old_hue = 0.0f, old_t = 0.0f, old_angle = 0.0f;
+  if (refresh) {
+    hue = old_hue;
+    t = old_t;
+    angle = old_angle;
+  } else {
+    old_hue = hue;
+    old_t = t;
+    old_angle = angle;
+  }
+
   auto hue_deg = hue * 360.0f;
   auto angle_deg = angle * 360.0f;
 
   t /= 200.0f;
 
-  static bool use_white = (LED_FORMAT) == PicoLed::FORMAT_WRGB;
-
-  for(auto i = 0u; i < led_strip.getNumLeds(); ++i) {
-    float percent_along = (float)i / led_strip.getNumLeds();
+  for(auto i = 0u; i < led_strip.num_leds; ++i) {
+    float percent_along = (float)i / (float)led_strip.num_leds;
     float offset = sinf((percent_along + 0.5f + t) * M_PI) * angle_deg;
     float h = wrap((hue_deg + offset) / 360.0f, 0.0f, 1.0f);
     uint8_t white;
@@ -54,11 +67,15 @@ void LEDControl::cycle_loop(float hue, float t, float angle) {
     switch(state.effect) {
       case EFFECT_MODE::HUE_CYCLE:
       default:
-        led_strip.setPixelColor(i, PicoLed::HSV(uint8_t(h*255.0f), 255.0f, 255.0f));
+        led_strip.set_hsv(i, h, 1.0f, eff_brightness);
         break;
       case EFFECT_MODE::WHITE_CHASE:
-        white = uint8_t((1.0f - h) * 255.0f);
-        led_strip.setPixelColor(i, use_white ? PicoLed::RGBW(0, 0, 0, white) : PicoLed::RGB(white, white, white));
+        white = uint8_t((1.0f - h) * eff_brightness * 255.0f);
+        if (LED_RGBW) {
+          led_strip.set_rgb(i, 0, 0, 0, white);
+        } else {
+          led_strip.set_rgb(i, white, white, white);
+        }
         break;
     }
   }
@@ -225,6 +242,8 @@ void LEDControl::init(Encoder *e) {
   cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 #endif
 
+  led_strip.start(UPDATES);
+
   if (load_state_from_flash() != 0) {
     printf("failed to load state from flash, using defaults\n");
     enable_state(DEFAULT_STATE);
@@ -236,10 +255,10 @@ void LEDControl::init(Encoder *e) {
   set_cycle(true);
 }
 
-uint8_t LEDControl::get_effective_brightness() {
+float_t LEDControl::get_effective_brightness() {
   if (transition_start_time == 0) {
     transition_start_brightness = state.on ? state.brightness : 0;
-    return (uint8_t)(transition_start_brightness*BRIGHTNESS_SCALE);
+    return transition_start_brightness;
   }
 
   auto ts = millis();
@@ -253,7 +272,7 @@ uint8_t LEDControl::get_effective_brightness() {
   float_t target_brightness = state.on ? state.brightness : 0;
 
   float b = (1.0f-cosf(t*M_PI))/2.0f;
-  return (uint8_t)((transition_start_brightness + b*(target_brightness-transition_start_brightness))*BRIGHTNESS_SCALE);
+  return (transition_start_brightness + b*(target_brightness-transition_start_brightness));
 }
 
 void LEDControl::enable_state(state_t p_state) {
@@ -295,7 +314,7 @@ void LEDControl::enable_state(state_t p_state) {
 
   log_state("enable_state", state);
 
-  if (transition_loop(true)) led_strip.show();
+  if (transition_loop(true)) led_strip.update();
 
   set_encoder_state();
   global_last_activity = millis();
@@ -306,12 +325,12 @@ bool LEDControl::transition_loop(bool force) {
   if (!force && transition_start_time == 0) return false;
 
   // we do this to prevent flickering
-  static int16_t old_eff_brightness = -1;
-  uint8_t eff_brightness = get_effective_brightness();
-  if (old_eff_brightness == -1 || old_eff_brightness != eff_brightness) {
-    led_strip.setBrightness(eff_brightness);
+  static float_t old_eff_brightness = -1.0f;
+  float_t eff_brightness = get_effective_brightness();
+  if (old_eff_brightness == -1.0f || old_eff_brightness != eff_brightness) {
+    set_brightness(eff_brightness);
     old_eff_brightness = eff_brightness;
-    return true; // changed, need to call led_strip.show()
+    return true; // changed, need to call led_strip.update()
   }
 
   return false;
@@ -417,9 +436,9 @@ uint32_t LEDControl::loop() {
           case ENCODER_MODE::BRIGHTNESS:
             new_state.brightness = std::min(MAX_BRIGHTNESS, std::max(MIN_BRIGHTNESS, state.brightness + count));
             printf("new brightness: %f\n", new_state.brightness);
-            led_strip.setBrightness(get_effective_brightness());
+            set_brightness(get_effective_brightness());
             enc->set_brightness(new_state.brightness);
-            led_strip.show();
+            led_strip.update();
             break;
 
           case ENCODER_MODE::SPEED:
@@ -461,14 +480,14 @@ uint32_t LEDControl::loop() {
   }
 
   if(b_held) {
-    led_strip.setBrightness(0);
-    led_strip.show();
+    set_brightness(0);
+    led_strip.update();
     printf("B held\n");
     sleep_ms(1500);
     save_state_to_flash();
 
-    led_strip.setBrightness(get_effective_brightness());
-    led_strip.show();
+    set_brightness(get_effective_brightness());
+    led_strip.update();
     global_last_activity = millis();
   }
 
@@ -535,7 +554,7 @@ uint32_t LEDControl::loop() {
   }
 
   if (need_refresh) {
-    led_strip.show();
+    led_strip.update();
   }
 
   if (menu_mode == MENU_MODE::MENU_ADJUST) encoder_loop();

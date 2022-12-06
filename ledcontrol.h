@@ -5,7 +5,7 @@
 #include <cmath>
 #include <common/pimoroni_common.hpp>
 #include "button.hpp"
-#include "PicoLed.hpp"
+#include <drivers/plasma/ws2812.hpp>
 #include "encoder.h"
 
 namespace ledcontrol {
@@ -18,7 +18,6 @@ namespace ledcontrol {
 
             MENU_COUNT
         };
-        const float_t BRIGHTNESS_SCALE = 255;
 
     public:
         LEDControl();
@@ -85,7 +84,10 @@ namespace ledcontrol {
         uint32_t transition_start_time;
         uint32_t transition_duration;
         float_t transition_start_brightness;
-        PicoLed::PicoLedController led_strip;
+
+        float_t eff_brightness = -1.0f;
+
+        plasma::WS2812 led_strip;
         pimoroni::Button button_b;
         pimoroni::Button button_c;
         Encoder *enc = nullptr;
@@ -103,9 +105,10 @@ namespace ledcontrol {
         void (*_on_state_change_cb)(state_t new_state);
 
         // private methods
-        void cycle_loop(float hue, float t, float angle);
+        void set_brightness(float_t brightness);
+        void cycle_loop(float hue, float t, float angle, bool refresh = false);
         uint16_t get_paused_time();
-        uint8_t get_effective_brightness();
+        float_t get_effective_brightness();
         bool transition_loop(bool force);
         void set_cycle(bool v);
         uint32_t encoder_colour_by_mode(ENCODER_MODE mode);

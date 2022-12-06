@@ -40,13 +40,12 @@ endif()
 # Include required libraries
 # This assumes `pimoroni-pico` is stored alongside your project
 include(../pimoroni-pico/drivers/button/button)
-include(PicoLED/PicoLed.cmake)
+include(../pimoroni-pico/drivers/plasma/plasma)
 
 target_link_libraries(${NAME}
         pico_stdlib
         button
-        hardware_pio
-        PicoLed
+        plasma
         hardware_flash
         hardware_sync
         hardware_gpio

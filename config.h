@@ -7,13 +7,17 @@
 #include <cmath>
 
 using namespace ledcontrol;
+using namespace plasma;
 
 // Adjust according to the number of LEDs you have
 const uint NUM_LEDS = 151;
 
-// This should be PicoLed::FORMAT_RGB, PicoLed::FORMAT_GRB or PicoLed::FORMAT_WRGB depending on the LED strip you use
-#define LED_FORMAT PicoLed::FORMAT_WRGB
-//#define LED_FORMAT PicoLed::FORMAT_GRB
+// Set this if the LED strip you use is RGBW
+const bool LED_RGBW = true;
+//const bool LED_RGBW = false;
+
+// Change this if the colour order of your LED strip is different
+const WS2812::COLOR_ORDER LED_ORDER = WS2812::COLOR_ORDER::GRB;
 
 // Defaults... floats are between 0 and 1.0f
 const LEDControl::state_t DEFAULT_STATE = {

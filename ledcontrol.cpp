@@ -26,6 +26,7 @@ LEDControl::LEDControl():
     transition_start_time(0),
     transition_duration(0),
     transition_start_brightness(0),
+    transition_target_brightness(1.0f),
     led_strip(NUM_LEDS, pio0, 0, LED_DATA_PIN, plasma::WS2812::DEFAULT_SERIAL_FREQ, LED_RGBW, LED_ORDER),
     button_b(pimoroni::Button(BUTTON_B_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
     button_c(pimoroni::Button(BUTTON_C_PIN, pimoroni::Polarity::ACTIVE_LOW, 0)),
@@ -270,10 +271,8 @@ float_t LEDControl::get_effective_brightness() {
 
   // sinusoidal transition
   float_t t = (float_t)(ts-transition_start_time) / (float_t)transition_duration;
-  float_t target_brightness = state.on ? state.brightness : 0;
-
   float_t b = (1.0f-cosf(t*M_PI))/2.0f;
-  return (transition_start_brightness + b*(target_brightness-transition_start_brightness));
+  return (transition_start_brightness + b*(transition_target_brightness-transition_start_brightness));
 }
 
 void LEDControl::enable_state(state_t p_state) {
@@ -305,8 +304,10 @@ void LEDControl::enable_state(state_t p_state) {
 
   if (p_state.on != state.on) {
     // fade in-out
+    transition_start_brightness = eff_brightness;
     transition_start_time = millis();
     transition_duration = p_state.on ? FADE_IN_DURATION : FADE_OUT_DURATION;
+    transition_target_brightness = p_state.on ? state.brightness : MIN_BRIGHTNESS;
   }
 
   state = p_state;

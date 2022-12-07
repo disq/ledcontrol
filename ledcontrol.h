@@ -84,6 +84,7 @@ namespace ledcontrol {
         uint32_t transition_start_time;
         uint32_t transition_duration;
         float_t transition_start_brightness;
+        float_t transition_target_brightness;
 
         float_t eff_brightness = -1.0f;
 

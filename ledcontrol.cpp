@@ -36,7 +36,7 @@ LEDControl::LEDControl():
 }
 
 void LEDControl::set_brightness(float_t brightness) {
-  eff_brightness = brightness;;
+  eff_brightness = brightness;
   cycle_loop(0, 0, 0, true);
 }
 
@@ -242,7 +242,8 @@ void LEDControl::init(Encoder *e) {
   cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 #endif
 
-  led_strip.start(UPDATES);
+  // since we call led_strip.update every time we need an update, we don't need to call led_strip.start to start the update timer
+  // led_strip.start(UPDATES);
 
   if (load_state_from_flash() != 0) {
     printf("failed to load state from flash, using defaults\n");
@@ -271,7 +272,7 @@ float_t LEDControl::get_effective_brightness() {
   float_t t = (float_t)(ts-transition_start_time) / (float_t)transition_duration;
   float_t target_brightness = state.on ? state.brightness : 0;
 
-  float b = (1.0f-cosf(t*M_PI))/2.0f;
+  float_t b = (1.0f-cosf(t*M_PI))/2.0f;
   return (transition_start_brightness + b*(target_brightness-transition_start_brightness));
 }
 
@@ -326,10 +327,10 @@ bool LEDControl::transition_loop(bool force) {
 
   // we do this to prevent flickering
   static float_t old_eff_brightness = -1.0f;
-  float_t eff_brightness = get_effective_brightness();
-  if (old_eff_brightness == -1.0f || old_eff_brightness != eff_brightness) {
-    set_brightness(eff_brightness);
-    old_eff_brightness = eff_brightness;
+  float_t tmp = get_effective_brightness();
+  if (old_eff_brightness == -1.0f || old_eff_brightness != tmp) {
+    set_brightness(tmp);
+    old_eff_brightness = tmp;
     return true; // changed, need to call led_strip.update()
   }
 

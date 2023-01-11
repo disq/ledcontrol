@@ -61,6 +61,12 @@ const uint LED_DATA_PIN = 28;
 const uint BUTTON_B_PIN = 27;
 const uint BUTTON_C_PIN = 26;
 
+const bool PRESENCE_ENABLED = false;
+//const bool PRESENCE_ENABLED = true;
+const uint PRESENCE_PIN = 22;
+const bool PRESENCE_ACTIVE_LOW = false;
+const uint16_t PRESENCE_CHECK_INTERVAL = 1000; // ms
+
 const uint16_t FADE_IN_DURATION = 1000; // ms
 const uint16_t FADE_OUT_DURATION = 2000; // ms
 const uint16_t ENCODER_INACTIVITY_TIMEOUT = 10000; // ms. after 10 seconds, encoder will switch to off mode and encoder LED will turn off

@@ -9,6 +9,7 @@
 #include <math.h>
 #include <cstring>
 #include "ledcontrol.h"
+#include "presence.h"
 #include "config.h"
 
 ledcontrol::LEDControl *leds = NULL;
@@ -179,6 +180,23 @@ void on_mqtt_connect() {
 }
 #endif
 
+void handle_presence() {
+  static uint32_t last_check = 0;
+  uint32_t ts = to_ms_since_boot(get_absolute_time());
+  if (ts - last_check < PRESENCE_CHECK_INTERVAL) return;
+  last_check = ts;
+
+  static bool last_value = true;
+
+  auto val = presence.is_present();
+  if (val == last_value) return;
+
+  last_value = val;
+  auto new_state = leds->get_state();
+  new_state.on = val;
+  leds->enable_state(new_state);
+}
+
 void error_loop(uint32_t delay_ms) {
   while(true) {
     board_led(true);
@@ -209,6 +227,8 @@ int main() {
     board_led(false);
   }
 
+  if (PRESENCE_ENABLED) presence.init(PRESENCE_PIN, PRESENCE_ACTIVE_LOW);
+
   leds = new ledcontrol::LEDControl();
   leds->init(&encoder);
 
@@ -234,5 +254,6 @@ int main() {
     sleep_ms(1);
 #endif
     sleep_ms(leds->loop());
+    if (PRESENCE_ENABLED) handle_presence();
   }
 }

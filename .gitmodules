@@ -1,3 +1,6 @@
 [submodule "cJSON"]
 	path = cJSON
 	url = https://github.com/DaveGamble/cJSON.git
+[submodule "DFRobot_mmWave_Radar"]
+	path = DFRobot_mmWave_Radar
+	url = https://github.com/DFRobotdl/DFRobot_mmWave_Radar

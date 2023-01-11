@@ -22,6 +22,7 @@ Simple LED Control project for Raspberry Pi Pico and Pico W with MQTT (and Home 
 - Optional: An extra button (button "B") if you want to load/save your colour schemes.
 - Optional: Another extra button (let's call this "C") if you want an instant on/off button.
 - Optional: [Captain Resetti](https://shop.pimoroni.com/products/captain-resetti-pico-reset-button) to return to default colours, or just replug the board.
+- Optional: [DFRobot mmWave Radar](https://shop.pimoroni.com/products/mmwave-radar-human-presence-detection-9m) to turn on/off the lights when you enter/leave the room.
 - Read [the uberguide](https://learn.adafruit.com/adafruit-neopixel-uberguide) if you haven't...
 
 ### Connections
@@ -36,6 +37,9 @@ Only a single (right) side of the Pico is used for connections to allow for crea
   - SW to `GP20`
 - Optional: Button "B" to `GP27`. Connect the other end of the button to any `GND` pin.
 - Optional: Button "C" to `GP26`. Connect the other end of the button to any `GND` pin.
+- Optional: mmWave Radar TX to `GP5`, RX to `GP4`. Connect `G` to any `GND` pin and `V` to power (Pin 36).
+
+To use another/custom way of detecting presence, see `PRESENCE_PIN` in `config.h`.
 
 Pinout diagram is [here](./doc/pinout.png) or [from the back](./doc/pinout-back.png) (courtesy of [pinout.xyz](https://pico.pinout.xyz/))
 

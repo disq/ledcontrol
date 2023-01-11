@@ -29,11 +29,11 @@ add_compile_options(-Wall
 
 if ((PICO_CYW43_SUPPORTED) AND (TARGET pico_cyw43_arch))
     add_executable(${NAME}
-            main.cpp ledcontrol.cpp ledcontrol.h util.h config.h encoder.cpp encoder.h iot.cpp iot.h presence.cpp presence.h config_iot.h mbedtls_util.c cJSON/cJSON.c cJSON/cJSON.h
+            main.cpp ledcontrol.cpp ledcontrol.h util.h config.h encoder.cpp encoder.h iot.cpp iot.h presence.cpp presence.h config_iot.h mbedtls_util.c cJSON/cJSON.c cJSON/cJSON.h DFRobot_mmWave_Radar.cpp DFRobot_mmWave_Radar.h
         )
 else()
     add_executable(${NAME}
-            main.cpp ledcontrol.cpp ledcontrol.h util.h config.h encoder.cpp encoder.h presence.cpp presence.h
+            main.cpp ledcontrol.cpp ledcontrol.h util.h config.h encoder.cpp encoder.h presence.cpp presence.h DFRobot_mmWave_Radar.cpp DFRobot_mmWave_Radar.h
         )
 endif()
 
@@ -50,6 +50,7 @@ target_link_libraries(${NAME}
         hardware_sync
         hardware_gpio
         hardware_pwm
+        hardware_uart
         pico_bootsel_via_double_reset
 )
 

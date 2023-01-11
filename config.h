@@ -63,8 +63,13 @@ const uint BUTTON_C_PIN = 26;
 
 const bool PRESENCE_ENABLED = false;
 //const bool PRESENCE_ENABLED = true;
+const bool PRESENCE_PIN_ENABLED = false;
 const uint PRESENCE_PIN = 22;
-const bool PRESENCE_ACTIVE_LOW = false;
+const bool PRESENCE_PIN_ACTIVE_LOW = false;
+const uint PRESENCE_UART_ID = 1;
+const uint PRESENCE_UART_RX_PIN = 4; // set these pins to 0 to disable UART
+const uint PRESENCE_UART_TX_PIN = 5;
+const uint PRESENCE_RANGE_METERS = 2; // only available if uart is enabled
 const uint16_t PRESENCE_CHECK_INTERVAL = 1000; // ms
 
 const uint16_t FADE_IN_DURATION = 1000; // ms

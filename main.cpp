@@ -227,7 +227,7 @@ int main() {
     board_led(false);
   }
 
-  if (PRESENCE_ENABLED) presence.init(PRESENCE_PIN, PRESENCE_ACTIVE_LOW);
+  if (PRESENCE_ENABLED) presence.init(PRESENCE_PIN, PRESENCE_PIN_ACTIVE_LOW, PRESENCE_UART_ID, PRESENCE_UART_TX_PIN, PRESENCE_UART_RX_PIN);
 
   leds = new ledcontrol::LEDControl();
   leds->init(&encoder);

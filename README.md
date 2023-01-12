@@ -38,8 +38,8 @@ Only a single (right) side of the Pico is used for connections to allow for crea
 - Optional: Button "B" to `GP27`. Connect the other end of the button to any `GND` pin.
 - Optional: Button "C" to `GP26`. Connect the other end of the button to any `GND` pin.
 - Optional: mmWave Radar TX to `GP5`, RX to `GP4`. Connect `G` to any `GND` pin and `V` to power (Pin 36).
-
-To use another/custom way of detecting presence, see `PRESENCE_PIN` in `config.h`.
+  - You can optionally connect `IO2` pin to `GP22` (see `PRESENCE_PIN`) and get more reliable results (reading UART takes time away from TCP tasks)
+  - You can also use another way of detecting presence, just set UART pins in `config.h` to 0.
 
 Pinout diagram is [here](./doc/pinout.png) or [from the back](./doc/pinout-back.png) (courtesy of [pinout.xyz](https://pico.pinout.xyz/))
 

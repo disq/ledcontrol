@@ -22,7 +22,7 @@ class DFRobot_mmWave_Radar
   public:
     DFRobot_mmWave_Radar(uart_inst_t *s);
     void DetRangeCfg(float parA_s, float parA_e);
-    bool readPresenceDetection(void);
+    bool readPresenceDetection(bool *result);
     void OutputLatency(float par1, float par2);
     void factoryReset();
 

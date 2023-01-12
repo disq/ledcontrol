@@ -8,7 +8,7 @@ Presence::Presence() {
 }
 
 void Presence::init(uint p_pin, bool p_active_low, uint p_uart_id, uint p_tx_pin, uint p_rx_pin) {
-  if (p_tx_pin == 0 || p_rx_pin == 0) {
+  if (PRESENCE_PIN_ENABLED) {
     pin = p_pin;
     pin_active_low = p_active_low;
 
@@ -19,14 +19,15 @@ void Presence::init(uint p_pin, bool p_active_low, uint p_uart_id, uint p_tx_pin
     } else {
       gpio_pull_down(pin);
     }
-    return;
   }
+
+  uart_enabled = p_tx_pin > 0 && p_rx_pin > 0;
+  if (!uart_enabled) return;
 
   auto u = uart_get_instance(p_uart_id);
   uart_init(u, 115200);
   gpio_set_function(p_tx_pin, GPIO_FUNC_UART);
   gpio_set_function(p_rx_pin, GPIO_FUNC_UART);
-  uart_enabled = true;
 
   sns = new DFRobot_mmWave_Radar(u);
   sns->factoryReset();
@@ -38,12 +39,17 @@ bool Presence::is_present() {
   static bool last_val = false;
 
   bool val;
-
-  if (uart_enabled) {
-    val = sns->readPresenceDetection();
-  } else {
+  if (PRESENCE_PIN_ENABLED) {
     val = gpio_get(pin);
     if (pin_active_low) val = !val;
+  } else if (uart_enabled) {
+    if (!sns->readPresenceDetection(&val)) {
+      printf("[presence] readPresenceDetection failed, returning previous value (%d)\n", last_val);
+      return last_val;
+    }
+  } else {
+    printf("[presence] unhandled condition\n");
+    return true;
   }
 
   if (val != last_val) {

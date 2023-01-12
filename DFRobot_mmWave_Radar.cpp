@@ -92,23 +92,24 @@ bool DFRobot_mmWave_Radar::recdData(uint8_t *buf)
 }
 
 
-bool DFRobot_mmWave_Radar::readPresenceDetection(void)
+bool DFRobot_mmWave_Radar::readPresenceDetection(bool *result)
 {
   uint8_t dat[15] = {0};
-  
-  bool ret;
-  if (recdData(dat)) {
-    if (dat[7] == '1') {
-      ret = true;
-    } else {
-      if (dat[7] == '0') {
-        ret = false;
-      }
-    }
-  } else {
-    while (1);
+
+  if (!recdData(dat)) {
+    return false;
   }
-  return ret;
+
+  switch (dat[7]) {
+    case '1':
+      *result = true;
+      return true;
+    case '0':
+      *result = false;
+      return true;
+    default:
+      return false;
+  }
 }
 
 

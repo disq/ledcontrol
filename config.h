@@ -63,7 +63,7 @@ const uint BUTTON_C_PIN = 26;
 
 const bool PRESENCE_ENABLED = false;
 //const bool PRESENCE_ENABLED = true;
-const bool PRESENCE_PIN_ENABLED = false;
+const bool PRESENCE_PIN_ENABLED = true;
 const uint PRESENCE_PIN = 22;
 const bool PRESENCE_PIN_ACTIVE_LOW = false;
 const uint PRESENCE_UART_ID = 1;

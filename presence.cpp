@@ -31,8 +31,8 @@ void Presence::init(uint p_pin, bool p_active_low, uint p_uart_id, uint p_tx_pin
 
   sns = new DFRobot_mmWave_Radar(u);
   sns->factoryReset();
-  sns->DetRangeCfg(0, PRESENCE_RANGE_METERS);
-  sns->OutputLatency(0, 0);
+  sns->DetRangeCfg(0.0f, PRESENCE_RANGE_METERS);
+  sns->OutputLatency(0.0f, 0.0f);
 }
 
 bool Presence::is_present() {

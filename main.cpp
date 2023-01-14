@@ -227,8 +227,6 @@ int main() {
     board_led(false);
   }
 
-  if (PRESENCE_ENABLED) presence.init(PRESENCE_PIN, PRESENCE_PIN_ACTIVE_LOW, PRESENCE_UART_ID, PRESENCE_UART_TX_PIN, PRESENCE_UART_RX_PIN);
-
   leds = new ledcontrol::LEDControl();
   leds->init(&encoder);
 
@@ -247,6 +245,8 @@ int main() {
     error_loop(500);
   }
 #endif
+
+  if (PRESENCE_ENABLED) presence.init(PRESENCE_PIN, PRESENCE_PIN_ACTIVE_LOW, PRESENCE_UART_ID, PRESENCE_UART_TX_PIN, PRESENCE_UART_RX_PIN);
 
   while(true) {
 #if PICO_CYW43_ARCH_POLL

@@ -52,6 +52,7 @@ namespace ledcontrol {
             enum ENCODER_MODE mode;
             bool on;
             bool stopped; // if we're not cycling (effective speed is 0)
+            bool absent; // used for presence detection
         } state_t;
 
         void init(Encoder *e);
@@ -116,6 +117,7 @@ namespace ledcontrol {
         void encoder_loop();
         void set_encoder_state();
         void encoder_blink_off();
+        bool get_effective_on_state(state_t s);
 
         // strings
         const char *effect_str[EFFECT_COUNT] = {

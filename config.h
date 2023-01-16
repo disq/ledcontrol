@@ -42,6 +42,7 @@ const LEDControl::state_t DEFAULT_STATE = {
     // Leave these as-is unless you want funky starting values
     .on = true,
     .stopped = false,
+    .absent = false,
 };
 
 // More configuration

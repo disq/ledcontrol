@@ -259,7 +259,7 @@ void LEDControl::init(Encoder *e) {
 
 float_t LEDControl::get_effective_brightness() {
   if (transition_start_time == 0) {
-    transition_start_brightness = state.on ? state.brightness : 0;
+    transition_start_brightness = get_effective_on_state(state) ? state.brightness : 0;
     return transition_start_brightness;
   }
 
@@ -273,6 +273,14 @@ float_t LEDControl::get_effective_brightness() {
   float_t t = (float_t)(ts-transition_start_time) / (float_t)transition_duration;
   float_t b = (1.0f-cosf(t*M_PI))/2.0f;
   return (transition_start_brightness + b*(transition_target_brightness-transition_start_brightness));
+}
+
+bool LEDControl::get_effective_on_state(state_t s) {
+  if (s.absent) {
+    return false;
+  }
+
+  return s.on;
 }
 
 void LEDControl::enable_state(state_t p_state) {
@@ -302,12 +310,14 @@ void LEDControl::enable_state(state_t p_state) {
 
   if (p_state.hue != state.hue || p_state.angle != state.angle || p_state.effect != state.effect) cycle_once = true;
 
-  if (p_state.on != state.on) {
+  bool p_on = get_effective_on_state(p_state);
+
+  if (p_on != get_effective_on_state(state)) {
     // fade in-out
     transition_start_brightness = eff_brightness;
     transition_start_time = millis();
-    transition_duration = p_state.on ? FADE_IN_DURATION : FADE_OUT_DURATION;
-    transition_target_brightness = p_state.on ? state.brightness : MIN_BRIGHTNESS;
+    transition_duration = p_on ? FADE_IN_DURATION : FADE_OUT_DURATION;
+    transition_target_brightness = p_on ? state.brightness : MIN_BRIGHTNESS;
   }
 
   state = p_state;
@@ -343,8 +353,8 @@ LEDControl::state_t LEDControl::get_state() {
 }
 
 void LEDControl::log_state(const char *prefix, state_t s) {
-  printf("[%s] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d%s%s\n",
-         prefix, s.hue, s.angle, s.speed, s.brightness, s.mode, s.effect, s.stopped? " (stopped)":"", s.on? "":" (off)");
+  printf("[%s] hue: %f, angle: %f, speed: %f, brightness: %f, mode:%d, effect:%d%s%s%s\n",
+         prefix, s.hue, s.angle, s.speed, s.brightness, s.mode, s.effect, s.stopped? " (stopped)":"", s.on? "":" (off)", s.absent?" (absent)":"");
 }
 
 int LEDControl::load_state_from_flash() {
@@ -380,6 +390,8 @@ int LEDControl::save_state_to_flash() {
     .state_size = sizeof(state_t),
     .state = state,
   };
+  fs.state.absent = DEFAULT_STATE.absent; // don't save presence state
+
   memcpy(fs.magic, flash_save_magic, strlen(flash_save_magic));
   memcpy(buffer, &fs, sizeof(flash_state_t));
 

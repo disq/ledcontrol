@@ -186,15 +186,12 @@ void handle_presence() {
   if (ts - last_check < PRESENCE_CHECK_INTERVAL) return;
   last_check = ts;
 
-  static bool last_value = true;
+  auto val = !presence.is_present();
+  auto s = leds->get_state();
+  if (s.absent == val) return;
 
-  auto val = presence.is_present();
-  if (val == last_value) return;
-
-  last_value = val;
-  auto new_state = leds->get_state();
-  new_state.on = val;
-  leds->enable_state(new_state);
+  s.absent = val;
+  leds->enable_state(s);
 }
 
 void error_loop(uint32_t delay_ms) {

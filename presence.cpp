@@ -33,6 +33,8 @@ void Presence::init(uint p_pin, bool p_active_low, uint p_uart_id, uint p_tx_pin
   sns->factoryReset();
   sns->DetRangeCfg(0.0f, PRESENCE_RANGE_METERS);
   sns->OutputLatency(0.0f, 0.0f);
+
+  if (PRESENCE_PIN_ENABLED) uart_deinit(u);
 }
 
 bool Presence::is_present() {

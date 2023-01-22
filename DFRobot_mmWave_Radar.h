@@ -25,6 +25,9 @@ class DFRobot_mmWave_Radar
     bool readPresenceDetection(bool *result);
     void OutputLatency(float par1, float par2);
     void factoryReset();
+    void stop();
+    void start();
+    void save();
 
   private:
 

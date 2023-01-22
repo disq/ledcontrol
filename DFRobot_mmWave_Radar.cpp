@@ -112,6 +112,20 @@ bool DFRobot_mmWave_Radar::readPresenceDetection(bool *result)
   }
 }
 
+void DFRobot_mmWave_Radar::stop() {
+  uart_write_blocking(_s, (uint8_t *) comStop, strlen(comStop));
+  sleep_ms(comDelay);
+}
+
+void DFRobot_mmWave_Radar::start() {
+  uart_write_blocking(_s, (uint8_t*)comStart, strlen(comStart));
+  sleep_ms(comDelay);
+}
+
+void DFRobot_mmWave_Radar::save() {
+  uart_write_blocking(_s, (uint8_t*)comSaveCfg, strlen(comSaveCfg));
+  sleep_ms(comDelay);
+}
 
 void DFRobot_mmWave_Radar::DetRangeCfg(float parA_s, float parA_e)
 {
@@ -120,16 +134,7 @@ void DFRobot_mmWave_Radar::DetRangeCfg(float parA_s, float parA_e)
   int16_t parA_E = parA_e / 0.15;
   sprintf(comDetRangeCfg, "detRangeCfg -1 %d %d", parA_S, parA_E);
 
-  uart_write_blocking(_s, (uint8_t*)comStop, strlen(comStop));
-  sleep_ms(comDelay);
-
   uart_write_blocking(_s, (uint8_t*)comDetRangeCfg, strlen(comDetRangeCfg));
-  sleep_ms(comDelay);
-
-  uart_write_blocking(_s, (uint8_t*)comSaveCfg, strlen(comSaveCfg));
-  sleep_ms(comDelay);
-
-  uart_write_blocking(_s, (uint8_t*)comStart, strlen(comStart));
   sleep_ms(comDelay);
 }
 
@@ -141,30 +146,12 @@ void DFRobot_mmWave_Radar::OutputLatency(float par1, float par2)
   int16_t Par2 = par2 * 1000 / 25;
   sprintf(comOutputLatency, "outputLatency -1 %d %d", Par1 , Par2);
 
-  uart_write_blocking(_s, (uint8_t*)comStop, strlen(comStop));
-  sleep_ms(comDelay);
-
   uart_write_blocking(_s, (uint8_t*)comOutputLatency, strlen(comOutputLatency));
-  sleep_ms(comDelay);
-
-  uart_write_blocking(_s, (uint8_t*)comSaveCfg, strlen(comSaveCfg));
-  sleep_ms(comDelay);
-
-  uart_write_blocking(_s, (uint8_t*)comStart, strlen(comStart));
   sleep_ms(comDelay);
 }
 
 void DFRobot_mmWave_Radar::factoryReset(void)
 {
-  uart_write_blocking(_s, (uint8_t*)comStop, strlen(comStop));
-  sleep_ms(comDelay);
-
   uart_write_blocking(_s, (uint8_t*)comFactoryReset, strlen(comFactoryReset));
-  sleep_ms(comDelay);
-
-  uart_write_blocking(_s, (uint8_t*)comSaveCfg, strlen(comSaveCfg));
-  sleep_ms(comDelay);
-
-  uart_write_blocking(_s, (uint8_t*)comStart, strlen(comStart));
   sleep_ms(comDelay);
 }

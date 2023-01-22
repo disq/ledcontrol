@@ -62,12 +62,12 @@ const uint LED_DATA_PIN = 28;
 const uint BUTTON_B_PIN = 27;
 const uint BUTTON_C_PIN = 26;
 
-const bool PRESENCE_ENABLED = false;
-//const bool PRESENCE_ENABLED = true;
+//const bool PRESENCE_ENABLED = false;
+const bool PRESENCE_ENABLED = true;
 const bool PRESENCE_PIN_ENABLED = true;
 const uint PRESENCE_PIN = 22;
 const bool PRESENCE_PIN_ACTIVE_LOW = false;
-const uint PRESENCE_UART_ID = 1;
+#define PRESENCE_UART uart1
 const uint PRESENCE_UART_RX_PIN = 4; // set these pins to 0 to disable UART
 const uint PRESENCE_UART_TX_PIN = 5;
 const float PRESENCE_RANGE_METERS = 2.0f; // only available if uart is enabled

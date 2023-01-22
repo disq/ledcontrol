@@ -3,7 +3,6 @@
 #include "hardware/gpio.h"
 #include "hardware/uart.h"
 #include "config.h"
-#include "pico/cyw43_arch.h"
 
 
 Presence::Presence(): u(PRESENCE_UART) {

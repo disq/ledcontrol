@@ -62,6 +62,13 @@ Only a single (right) side of the Pico is used for connections to allow for crea
 
 Pinout diagram is [here](./doc/pinout.png) or [from the back](./doc/pinout-back.png) (courtesy of [pinout.xyz](https://pico.pinout.xyz/))
 
+#### Using LD2410 sensor instead of DFRobot mmWave Radar
+
+Set `PRESENCE_UART_RX_PIN` and `PRESENCE_UART_TX_PIN` to `0` in `config.h` and connect the [LD2410](https://www.aliexpress.com/item/1005004351593073.html) sensor as such:
+  - `VCC` to `VSYS` (Pin 39)
+  - `GND` to any `GND` pin
+  - `OUT` to Pin 22 (see `PRESENCE_PIN`)
+
 ## Usage
 
 ### TL;DR
@@ -108,7 +115,6 @@ And the Pico SDK:
 ```bash
 git clone https://github.com/raspberrypi/pico-sdk
 cd pico-sdk
-git checkout develop # Switch to develop branch
 git submodule update --init
 export PICO_SDK_PATH=`pwd`
 cd ../

@@ -67,7 +67,7 @@ Pinout diagram is [here](./doc/pinout.png) or [from the back](./doc/pinout-back.
 Set `PRESENCE_UART_RX_PIN` and `PRESENCE_UART_TX_PIN` to `0` in `config.h` and connect the [LD2410](https://www.aliexpress.com/item/1005004351593073.html) sensor as such:
   - `VCC` to `VSYS` (Pin 39)
   - `GND` to any `GND` pin
-  - `OUT` to Pin 22 (see `PRESENCE_PIN`)
+  - `OUT` to `GP22` (see `PRESENCE_PIN`)
 
 ## Usage
 

@@ -15,13 +15,13 @@ Simple LED Control project for Raspberry Pi Pico and Pico W with MQTT (and Home 
 - [Build](#build)
 - [Flash](#flash)
 
-## Example Build
+## Example Build #1
 
 This build uses the DFRobot mmWave sensor to detect presence, and the Sparkfun RGB Rotary Encoder with built-in push button. The rotary encoder is used to control the LED strip, and the "C" button is used to turn the LEDs on/off.
 
 PCB:
 
-![pcb](./pcb/IMG_1639.jpg)
+![pcb](./pcb1/IMG_1639.jpg)
 
 The PCB can be ordered from AISLER, [here](https://aisler.net/p/ESZQZJZG) or from another manufacturer of your choice.
 
@@ -31,7 +31,17 @@ The PCB can be ordered from AISLER, [here](https://aisler.net/p/ESZQZJZG) or fro
 
 The enclosure design files are stored in Tinkercad, [here](https://www.tinkercad.com/things/83AKoWrE1k2-ledcontrol-case).
 
-PCB files and additional photos can be found in [./pcb](./pcb) and the 3D printed enclosure files and photos are in [./enclosure](./enclosure).
+Schematic, PCB files and additional photos can be found in [./pcb1](./pcb1) and the 3D printed enclosure files and photos are in [./enclosure](./enclosure).
+
+## Example Build #2
+
+This is more of a dev board, still has sockets for DFRobot mmWave or a LD2410 sensor, the Sparkfun RGB Rotary Encoder with built-in push button and additional button breakouts.
+
+PCB:
+
+![pcb](./pcb2/IMG_1869.jpg)
+
+Schematic, PCB files and additional photos can be found in [./pcb2](./pcb2).
 
 ## Hardware
 

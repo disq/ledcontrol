@@ -379,8 +379,27 @@ int LEDControl::load_state_from_flash() {
   return 0;
 }
 
-int LEDControl::save_state_to_flash() {
-  printf("save_state_to_flash: start\n");
+void LEDControl::save_state_to_flash() {
+  static uint32_t last_save = 0;
+  uint32_t ts = to_ms_since_boot(get_absolute_time());
+  if (ts - last_save < 5000) {
+    printf("save_state_to_flash: too early\n");
+    last_save = ts; // require cooldown to prevent accidental spamming
+    return;
+  }
+
+  set_brightness(0);
+  led_strip.update();
+  sleep_ms(1500);
+  _save_state_to_flash();
+
+  set_brightness(get_effective_brightness());
+  led_strip.update();
+  global_last_activity = millis();
+}
+
+int LEDControl::_save_state_to_flash() {
+  printf("_save_state_to_flash: start\n");
 
   // prepare the buffer
   uint8_t buffer[256];
@@ -402,7 +421,7 @@ int LEDControl::save_state_to_flash() {
   flash_range_program(FLASH_TARGET_OFFSET, buffer, sizeof(buffer));
   restore_interrupts(ints);
 
-  printf("save_state_to_flash: success\n");
+  printf("_save_state_to_flash: success\n");
 
 //  LEDControl::load_state_from_flash();
   return 0;
@@ -494,15 +513,8 @@ uint32_t LEDControl::loop() {
   }
 
   if(b_held) {
-    set_brightness(0);
-    led_strip.update();
     printf("B held\n");
-    sleep_ms(1500);
     save_state_to_flash();
-
-    set_brightness(get_effective_brightness());
-    led_strip.update();
-    global_last_activity = millis();
   }
 
   if(b_pressed) {

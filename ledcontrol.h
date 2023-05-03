@@ -71,7 +71,7 @@ namespace ledcontrol {
 
         // flashy things
         int load_state_from_flash();
-        int save_state_to_flash();
+        void save_state_to_flash();
 
         void set_on_state_change_cb(void (*cb)(state_t new_state)) { _on_state_change_cb = cb; }
 
@@ -118,6 +118,7 @@ namespace ledcontrol {
         void set_encoder_state();
         void encoder_blink_off();
         bool get_effective_on_state(state_t s);
+        int _save_state_to_flash();
 
         // strings
         const char *effect_str[EFFECT_COUNT] = {

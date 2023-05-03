@@ -55,6 +55,30 @@ void on_state_change(ledcontrol::LEDControl::state_t new_state) {
   publish_state(new_state);
 }
 
+void on_save_command(const char *data, size_t len) {
+  printf("[on_save_command] %.*s\n", len, data);
+
+  cJSON *json = cJSON_ParseWithLength(data, len);
+  if (json == NULL) {
+    cJSON_Delete(json);
+    printf("[on_save_command] json parse failed\n");
+    return;
+  }
+//  char *s = cJSON_Print(json);
+//  printf("here: %s\n", s);
+//  free(s);
+
+  auto on_off = cJSON_GetObjectItem(json, "state");
+  if (cJSON_IsString(on_off) && (on_off->valuestring != NULL) && strcmp(on_off->valuestring, "OFF") == 0) {
+    // ignore off state. any other json will pass
+    cJSON_Delete(json);
+    return;
+  }
+
+  cJSON_Delete(json);
+  leds->save_state_to_flash();
+}
+
 void on_command(const char *data, size_t len) {
   printf("[on_command] %.*s\n", len, data);
 
@@ -149,7 +173,10 @@ void on_command(const char *data, size_t len) {
   }
 }
 
+bool mqtt_connected = false;
+
 void on_mqtt_connect() {
+  mqtt_connected = true;
   printf("mqtt connected\n");
   leds->set_on_state_change_cb(on_state_change);
 
@@ -177,6 +204,7 @@ void on_mqtt_connect() {
     }
   }
   iot.publish_config(buffer);
+//  iot.publish_config("", true); // save button. fails with -1 so we do it in main() below
 }
 #endif
 
@@ -228,7 +256,7 @@ int main() {
   leds->init(&encoder);
 
 #ifdef RASPBERRYPI_PICO_W
-  auto init_val = iot.init(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, wifi_looper, on_mqtt_connect, on_command);
+  auto init_val = iot.init(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, wifi_looper, on_mqtt_connect, on_command, on_save_command);
   if (init_val != 0) {
     printf("[error] iot.init returned: %d\n", init_val);
     error_loop(1000);
@@ -245,6 +273,7 @@ int main() {
 
   if (PRESENCE_ENABLED) presence.init(PRESENCE_PIN, PRESENCE_PIN_ACTIVE_LOW, PRESENCE_UART_TX_PIN, PRESENCE_UART_RX_PIN);
 
+  bool save_published = false;
   while(true) {
 #if PICO_CYW43_ARCH_POLL
     cyw43_arch_poll();
@@ -252,5 +281,18 @@ int main() {
 #endif
     sleep_ms(leds->loop());
     if (PRESENCE_ENABLED) handle_presence();
+
+#ifdef RASPBERRYPI_PICO_W
+    // consecutive publish calls fail, so we need to wait a bit
+    if (mqtt_connected && !save_published) {
+        sleep_ms(100);
+#if PICO_CYW43_ARCH_POLL
+        cyw43_arch_poll();
+        sleep_ms(1);
+#endif
+        save_published = true;
+        iot.publish_config("", true); // save button
+    }
+#endif
   }
 }

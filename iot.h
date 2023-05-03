@@ -17,14 +17,17 @@ class IOT {
   private:
     typedef struct {
         mqtt_client_t *mqtt_client;
+        char last_topic_name[256];
     } mqtt_wrapper_t;
 
     mqtt_wrapper_t *global_state;
     char state_topic[256], command_topic[256], config_topic[256];
+    char save_state_topic[256], save_command_topic[256], save_config_topic[256];
 
     void (*_connect_cb)();
-    void (*_command_cb)(const char *data, size_t len);
     void (*_loop_cb)();
+    void (*_command_cb)(const char *data, size_t len);
+    void (*_save_command_cb)(const char *data, size_t len);
 
     void poll_wifi(uint32_t min_sleep_ms = 100);
     int run_dns_lookup(const char *host, ip_addr_t *addr);
@@ -32,15 +35,15 @@ class IOT {
     void mqtt_disconnect_and_free(mqtt_wrapper_t *state);
     int mqtt_fresh_state(const char *mqtt_host, uint16_t mqtt_port, mqtt_wrapper_t *state);
     void get_topic_name(char *buf, size_t buf_len, const char *prepend_str, const char *append_str);
+    void reset_last_topic_name();
 
   public:
     IOT();
-    int init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)(), void (*connect_cb)());
-    int init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)(), void (*connect_cb)(), void (*command_cb)(const char *data, size_t len));
+    int init(const char *ssid, const char *password, uint32_t authmode, void (*loop_cb)(), void (*connect_cb)(), void (*command_cb)(const char *data, size_t len), void (*save_command_cb)(const char *data, size_t len));
     int connect();
     const char* get_client_id();
     int publish_state(const char *buffer);
-    int publish_config(const char *effects);
+    int publish_config(const char *effects, const bool is_save = false);
 
     // callbacks
     void _dns_found_cb(const char *name, const ip_addr_t *ipaddr, void *callback_arg);

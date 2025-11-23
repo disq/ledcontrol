@@ -65,3 +65,4 @@
 // these were added for ledcontrol
 #define MBEDTLS_BASE64_C
 #define MBEDTLS_PEM_PARSE_C
+#define MBEDTLS_PLATFORM_MS_TIME_ALT
